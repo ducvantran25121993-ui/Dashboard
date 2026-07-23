@@ -1,7 +1,7 @@
 import React from 'react';
 import { DollarSign, Wallet, TrendingUp, Percent, Award, ArrowUpRight } from 'lucide-react';
 import { DisplayUnit } from '../types';
-import { formatVND, formatPercent } from '../utils/formatters';
+import { formatVND, formatPercent, isVietKieuRegion } from '../utils/formatters';
 import { MonthDataset } from '../data/revenueData';
 
 interface KPISummaryProps {
@@ -10,16 +10,21 @@ interface KPISummaryProps {
 }
 
 export const KPISummary: React.FC<KPISummaryProps> = ({ monthData, displayUnit }) => {
-  const totalRevenue = monthData.regions.reduce((acc, r) => acc + (r.revenue || 0), 0);
+  // Exclude Việt Kiều revenue from total revenue calculation as requested
+  const totalRevenue = monthData.regions.reduce(
+    (acc, r) => acc + (isVietKieuRegion(r.name) ? 0 : (r.revenue || 0)),
+    0
+  );
   const totalCostVAT = monthData.regions.reduce((acc, r) => acc + (r.costVAT || 0), 0);
   const totalProfit = totalRevenue - totalCostVAT;
   const avgCostRatio = totalRevenue > 0 ? (totalCostVAT / totalRevenue) * 100 : 0;
 
-  // Find top revenue region
-  const topRevenueRegion = [...monthData.regions].sort((a, b) => b.revenue - a.revenue)[0];
+  // Find top revenue region (excluding Việt Kiều)
+  const nonVietKieuRegions = monthData.regions.filter((r) => !isVietKieuRegion(r.name));
+  const topRevenueRegion = [...nonVietKieuRegions].sort((a, b) => b.revenue - a.revenue)[0];
 
-  // Find lowest cost ratio region with revenue > 0
-  const validRatioRegions = monthData.regions.filter((r) => r.revenue > 0);
+  // Find lowest cost ratio region with revenue > 0 (excluding Việt Kiều)
+  const validRatioRegions = nonVietKieuRegions.filter((r) => r.revenue > 0);
   const topRatioRegion = [...validRatioRegions].sort(
     (a, b) => (a.costVAT / a.revenue) - (b.costVAT / b.revenue)
   )[0];
@@ -42,7 +47,7 @@ export const KPISummary: React.FC<KPISummaryProps> = ({ monthData, displayUnit }
           </p>
           <div className="flex items-center gap-1.5 mt-2 text-xs text-emerald-400 font-medium">
             <ArrowUpRight className="w-3.5 h-3.5" />
-            <span>Cột Doanh Thu toàn khu vực</span>
+            <span>Toàn khu vực (Đã trừ DT Việt Kiều)</span>
           </div>
         </div>
       </div>

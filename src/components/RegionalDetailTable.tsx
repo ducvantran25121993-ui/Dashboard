@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { RegionData } from '../data/revenueData';
 import { DisplayUnit } from '../types';
-import { formatVND, formatPercent, exportToCSV } from '../utils/formatters';
+import { formatVND, formatPercent, exportToCSV, isVietKieuRegion } from '../utils/formatters';
 
 interface RegionalDetailTableProps {
   regions: RegionData[];
@@ -79,8 +79,11 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
       return sortOrder === 'desc' ? -result : result;
     });
 
-  // Calculate totals
-  const totalRevenue = processedRegions.reduce((sum, r) => sum + r.revenue, 0);
+  // Calculate totals (excluding Việt Kiều revenue as requested)
+  const totalRevenue = processedRegions.reduce((sum, r) => {
+    if (isVietKieuRegion(r.name)) return sum;
+    return sum + r.revenue;
+  }, 0);
   const totalCostVAT = processedRegions.reduce((sum, r) => sum + r.costVAT, 0);
   const totalProfit = totalRevenue - totalCostVAT;
   const totalRatio = totalRevenue > 0 ? (totalCostVAT / totalRevenue) * 100 : 0;
@@ -320,6 +323,9 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                 <td className="py-3 px-4"></td>
                 <td className="py-3 px-4 text-sm uppercase text-slate-300">
                   Tổng Cộng ({processedRegions.length} Khu Vực)
+                  <span className="block text-[11px] normal-case text-emerald-400 font-normal">
+                    (Đã trừ Doanh Thu Việt Kiều)
+                  </span>
                 </td>
                 <td className="py-3 px-4 text-right text-emerald-400 text-base">
                   {formatVND(totalRevenue, displayUnit)}

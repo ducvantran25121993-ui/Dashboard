@@ -30,7 +30,8 @@ import {
 } from 'lucide-react';
 import { MONTHLY_DATA, MonthDataset } from '../data/revenueData';
 import { DisplayUnit } from '../types';
-import { formatVND, formatChartAxisVND, formatPercent } from '../utils/formatters';
+import { formatVND, formatChartAxisVND, formatPercent, isVietKieuRegion } from '../utils/formatters';
+import { VietKieuChart } from './VietKieuChart';
 
 interface SixMonthOverviewProps {
   displayUnit: DisplayUnit;
@@ -67,7 +68,13 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         ? month.regions
         : month.regions.filter((r) => r.name === selectedRegionFilter);
 
-    const revenue = filteredRegions.reduce((sum, r) => sum + (r.revenue || 0), 0);
+    const revenue = filteredRegions.reduce((sum, r) => {
+      // Exclude Việt Kiều revenue when aggregating all regions
+      if (selectedRegionFilter === 'all' && isVietKieuRegion(r.name)) {
+        return sum;
+      }
+      return sum + (r.revenue || 0);
+    }, 0);
     const costVAT = filteredRegions.reduce((sum, r) => sum + (r.costVAT || 0), 0);
     const profit = revenue - costVAT;
     const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
@@ -262,7 +269,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             {formatVND(grandRevenue, displayUnit)}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Trung bình: {formatVND(grandRevenue / 6, displayUnit)} / tháng
+            Đã trừ DT Việt Kiều • TB: {formatVND(grandRevenue / 6, displayUnit)} / tháng
           </p>
         </div>
 
@@ -579,6 +586,9 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Dedicated Viet Kieu 6-Month Breakdown & Chart */}
+      <VietKieuChart monthlyData={monthlyData} displayUnit={displayUnit} />
 
       {/* Monthly Summary Breakdown Table */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">

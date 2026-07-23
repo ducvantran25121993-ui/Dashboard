@@ -9,6 +9,7 @@ import { RegionDataChart } from './components/RegionDataChart';
 import { ServiceDataChart } from './components/ServiceDataChart';
 import { DailyDataChart } from './components/DailyDataChart';
 import { CombinedChart } from './components/CombinedChart';
+import { VietKieuChart } from './components/VietKieuChart';
 import { RegionalDetailTable } from './components/RegionalDetailTable';
 import { SixMonthOverview } from './components/SixMonthOverview';
 import { SheetStatusBanner } from './components/SheetStatusBanner';
@@ -145,6 +146,13 @@ export default function App() {
             <CombinedChart
               regions={currentMonthData.regions}
               monthLabel={currentMonthData.label}
+              displayUnit={displayUnit}
+            />
+
+            {/* Dedicated Viet Kieu Revenue & Cost Chart (Tách biệt từng tháng) */}
+            <VietKieuChart
+              monthlyData={monthlyDatasets}
+              activeMonth={currentMonthNum}
               displayUnit={displayUnit}
             />
 

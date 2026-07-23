@@ -12,7 +12,7 @@ import {
 import { DollarSign, ArrowUpDown, BarChart2, LayoutList } from 'lucide-react';
 import { RegionData } from '../data/revenueData';
 import { DisplayUnit } from '../types';
-import { formatVND, formatChartAxisVND, formatPercent } from '../utils/formatters';
+import { formatVND, formatChartAxisVND, formatPercent, isVietKieuRegion } from '../utils/formatters';
 
 interface RevenueChartProps {
   regions: RegionData[];
@@ -28,8 +28,11 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'alpha'>('desc');
   const [isHorizontal, setIsHorizontal] = useState(false);
 
-  // Calculate total revenue for percent share
-  const totalRevenue = regions.reduce((acc, r) => acc + (r.revenue || 0), 0);
+  // Calculate total revenue for percent share (excluding Việt Kiều revenue)
+  const totalRevenue = regions.reduce(
+    (acc, r) => acc + (isVietKieuRegion(r.name) ? 0 : (r.revenue || 0)),
+    0
+  );
 
   // Prepare and sort data
   const chartData = [...regions]
@@ -102,7 +105,7 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
             <span>Doanh Thu Tháng Theo Từng Khu Vực</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            {monthLabel} • Tổng doanh thu toàn hệ thống:{' '}
+            {monthLabel} • Tổng doanh thu hệ thống (đã trừ Việt Kiều):{' '}
             <strong className="text-emerald-400">{formatVND(totalRevenue, displayUnit)}</strong>
           </p>
         </div>

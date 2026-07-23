@@ -1,0 +1,423 @@
+import React, { useState } from 'react';
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ComposedChart,
+} from 'recharts';
+import {
+  Plane,
+  TrendingUp,
+  DollarSign,
+  Users,
+  Target,
+  BarChart3,
+  Calendar,
+  CheckCircle2,
+  XCircle,
+  HelpCircle,
+} from 'lucide-react';
+import { MonthDataset } from '../data/revenueData';
+import { DisplayUnit } from '../types';
+import { formatVND, formatChartAxisVND, formatPercent, isVietKieuRegion } from '../utils/formatters';
+
+interface VietKieuChartProps {
+  monthlyData: MonthDataset[];
+  activeMonth?: number; // Optional month highlight (1-6)
+  displayUnit: DisplayUnit;
+}
+
+export const VietKieuChart: React.FC<VietKieuChartProps> = ({
+  monthlyData,
+  activeMonth,
+  displayUnit,
+}) => {
+  const [chartType, setChartType] = useState<'revenue' | 'data'>('revenue');
+
+  // Extract month-by-month data for Việt Kiều
+  const vietKieuMonthly = monthlyData.map((m) => {
+    const vkRegion = m.regions.find((r) => isVietKieuRegion(r.name));
+
+    const revenue = vkRegion?.revenue || 0;
+    const costVAT = vkRegion?.costVAT || 0;
+    const cpDichVu =
+      vkRegion?.cpDichVu ||
+      vkRegion?.cpTong ||
+      vkRegion?.services?.reduce((sum, s) => sum + (s.cp || 0), 0) ||
+      0;
+    const profit = revenue - costVAT;
+    const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
+    const dataCount =
+      vkRegion?.totalData ||
+      vkRegion?.services?.reduce((sum, s) => sum + (s.dataCount || 0), 0) ||
+      0;
+    const cpPerData = dataCount > 0 ? cpDichVu / dataCount : 0;
+    const isKpiMet = ratio <= 15.0;
+
+    return {
+      monthNum: m.month,
+      monthLabel: m.label,
+      revenue,
+      costVAT,
+      cpDichVu,
+      profit,
+      ratio,
+      dataCount,
+      cpPerData,
+      isKpiMet,
+    };
+  });
+
+  // Calculate totals across all months
+  const grandRevenue = vietKieuMonthly.reduce((sum, m) => sum + m.revenue, 0);
+  const grandCostVAT = vietKieuMonthly.reduce((sum, m) => sum + m.costVAT, 0);
+  const grandCpDichVu = vietKieuMonthly.reduce((sum, m) => sum + m.cpDichVu, 0);
+  const grandProfit = grandRevenue - grandCostVAT;
+  const grandRatio = grandRevenue > 0 ? (grandCostVAT / grandRevenue) * 100 : 0;
+  const grandDataCount = vietKieuMonthly.reduce((sum, m) => sum + m.dataCount, 0);
+  const avgCpPerData = grandDataCount > 0 ? grandCpDichVu / grandDataCount : 0;
+
+  // Selected month metrics if activeMonth is provided
+  const activeMonthMetrics = activeMonth
+    ? vietKieuMonthly.find((m) => m.monthNum === activeMonth)
+    : null;
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-2 z-50 min-w-[220px]">
+          <p className="font-bold text-white text-sm border-b border-slate-800 pb-1 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-amber-400">
+              <Plane className="w-4 h-4" />
+              Việt Kiều ({label})
+            </span>
+          </p>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-emerald-400 font-medium">Doanh Thu:</span>
+              <span className="font-bold text-emerald-300">
+                {formatVND(data.revenue, displayUnit)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-amber-400 font-medium">Chi Phí (VAT):</span>
+              <span className="font-bold text-amber-300">
+                {formatVND(data.costVAT, displayUnit)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-purple-400 font-medium">Chi Phí Dịch Vụ:</span>
+              <span className="font-bold text-purple-300">
+                {formatVND(data.cpDichVu, displayUnit)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300 border-t border-slate-800 pt-1">
+              <span className="text-blue-400 font-medium">Lợi Nhuận:</span>
+              <span className="font-bold text-blue-400">
+                {formatVND(data.profit, displayUnit)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-400 pt-1 border-t border-slate-800">
+              <span>% CP/DT:</span>
+              <span className="font-bold text-purple-300">{formatPercent(data.ratio)}</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-400">
+              <span>Số lượng Data:</span>
+              <span className="font-bold text-cyan-400">
+                {data.dataCount.toLocaleString('vi-VN')} data
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 shadow-lg space-y-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400">
+              <Plane className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <span>Biểu Đồ Doanh Thu & Chi Phí Việt Kiều Từng Tháng</span>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  Riêng Biệt
+                </span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Báo cáo độc lập do đặc thù riêng (không cộng gộp vào doanh thu tổng hệ thống)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* View Mode Switcher */}
+        <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 self-start sm:self-auto">
+          <button
+            onClick={() => setChartType('revenue')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              chartType === 'revenue'
+                ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" />
+            <span>Doanh Thu & Chi Phí</span>
+          </button>
+          <button
+            onClick={() => setChartType('data')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              chartType === 'data'
+                ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Data & CP/Data</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Metric Cards Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Doanh Thu Việt Kiều {activeMonth ? `(${activeMonthMetrics?.monthLabel})` : '(6 Tháng)'}
+          </span>
+          <p className="text-xl font-bold text-emerald-400 mt-1">
+            {formatVND(
+              activeMonthMetrics ? activeMonthMetrics.revenue : grandRevenue,
+              displayUnit
+            )}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            {activeMonth
+              ? `Tỷ trọng 6 tháng: ${formatPercent(
+                  grandRevenue > 0 ? (activeMonthMetrics!.revenue / grandRevenue) * 100 : 0
+                )}`
+              : `Trung bình: ${formatVND(grandRevenue / 6, displayUnit)} / tháng`}
+          </p>
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Chi Phí VAT Việt Kiều
+          </span>
+          <p className="text-xl font-bold text-amber-400 mt-1">
+            {formatVND(
+              activeMonthMetrics ? activeMonthMetrics.costVAT : grandCostVAT,
+              displayUnit
+            )}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            % CP/DT:
+            <strong className="text-purple-300 ml-1">
+              {formatPercent(activeMonthMetrics ? activeMonthMetrics.ratio : grandRatio)}
+            </strong>
+          </p>
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Lợi Nhuận Việt Kiều
+          </span>
+          <p className="text-xl font-bold text-blue-400 mt-1">
+            {formatVND(
+              activeMonthMetrics ? activeMonthMetrics.profit : grandProfit,
+              displayUnit
+            )}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Chi phí dịch vụ: {formatVND(activeMonthMetrics ? activeMonthMetrics.cpDichVu : grandCpDichVu, displayUnit)}
+          </p>
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
+          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+            Lượng Data Việt Kiều
+          </span>
+          <p className="text-xl font-bold text-cyan-400 mt-1">
+            {(activeMonthMetrics ? activeMonthMetrics.dataCount : grandDataCount).toLocaleString('vi-VN')}{' '}
+            <span className="text-xs text-slate-400 font-normal">data</span>
+          </p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            CP / 1 Data: <strong className="text-amber-300">{formatVND(activeMonthMetrics ? activeMonthMetrics.cpPerData : avgCpPerData, displayUnit)}</strong>
+          </p>
+        </div>
+      </div>
+
+      {/* Interactive Main Chart */}
+      <div className="h-[320px] w-full pt-2">
+        <ResponsiveContainer width="100%" height="100%">
+          {chartType === 'revenue' ? (
+            <ComposedChart data={vietKieuMonthly} margin={{ top: 15, right: 10, left: 10, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+              <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={11} tickLine={false} />
+              <YAxis
+                yAxisId="left"
+                tickFormatter={formatChartAxisVND}
+                stroke="#94a3b8"
+                fontSize={11}
+                width={65}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }} />
+              <Bar
+                yAxisId="left"
+                dataKey="revenue"
+                name="Doanh Thu Việt Kiều"
+                fill="#10b981"
+                radius={[6, 6, 0, 0]}
+              />
+              <Bar
+                yAxisId="left"
+                dataKey="costVAT"
+                name="Chi Phí (VAT)"
+                fill="#f59e0b"
+                radius={[6, 6, 0, 0]}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="profit"
+                name="Lợi Nhuận"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                dot={{ r: 4, fill: '#3b82f6' }}
+              />
+            </ComposedChart>
+          ) : (
+            <BarChart data={vietKieuMonthly} margin={{ top: 15, right: 10, left: 10, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+              <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={11} tickLine={false} />
+              <YAxis stroke="#94a3b8" fontSize={11} width={50} />
+              <Tooltip
+                formatter={(val: any, name: any) => [
+                  name === 'Số lượng Data'
+                    ? `${Number(val).toLocaleString('vi-VN')} data`
+                    : formatVND(Number(val), displayUnit),
+                  name,
+                ]}
+                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+              />
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }} />
+              <Bar
+                dataKey="dataCount"
+                name="Số lượng Data"
+                fill="#06b6d4"
+                radius={[6, 6, 0, 0]}
+              />
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+
+      {/* Detailed Monthly Breakdown Table for Việt Kiều */}
+      <div className="space-y-2 pt-2 border-t border-slate-800">
+        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-amber-400" />
+            Bảng Chi Tiết Việt Kiều Từng Tháng (Tháng 1 - Tháng 6)
+          </span>
+        </h3>
+
+        <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-800/80 text-slate-400 uppercase tracking-wider font-semibold">
+              <tr>
+                <th className="py-2.5 px-3">Tháng</th>
+                <th className="py-2.5 px-3 text-right">Doanh Thu</th>
+                <th className="py-2.5 px-3 text-right">Chi Phí (VAT)</th>
+                <th className="py-2.5 px-3 text-right">Lợi Nhuận</th>
+                <th className="py-2.5 px-3 text-center">% CP/DT</th>
+                <th className="py-2.5 px-3 text-right">Số Data</th>
+                <th className="py-2.5 px-3 text-right">CP / 1 Data</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
+              {vietKieuMonthly.map((m) => {
+                const isCurrentActive = activeMonth === m.monthNum;
+                return (
+                  <tr
+                    key={m.monthNum}
+                    className={`hover:bg-slate-800/50 transition-colors ${
+                      isCurrentActive ? 'bg-amber-500/10 font-medium' : ''
+                    }`}
+                  >
+                    <td className="py-2.5 px-3 font-bold text-white flex items-center gap-1.5">
+                      {m.monthLabel}
+                      {isCurrentActive && (
+                        <span className="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded">
+                          Đang xem
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-bold text-emerald-400">
+                      {formatVND(m.revenue, displayUnit)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-amber-400">
+                      {formatVND(m.costVAT, displayUnit)}
+                    </td>
+                    <td
+                      className={`py-2.5 px-3 text-right font-bold ${
+                        m.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {formatVND(m.profit, displayUnit)}
+                    </td>
+                    <td className="py-2.5 px-3 text-center font-semibold text-purple-300">
+                      {formatPercent(m.ratio)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-cyan-400">
+                      {m.dataCount.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-slate-300">
+                      {formatVND(m.cpPerData, displayUnit)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-slate-800/90 font-bold text-white border-t border-slate-700">
+              <tr>
+                <td className="py-2.5 px-3">TỔNG 6 THÁNG</td>
+                <td className="py-2.5 px-3 text-right text-emerald-400 font-bold">
+                  {formatVND(grandRevenue, displayUnit)}
+                </td>
+                <td className="py-2.5 px-3 text-right text-amber-400 font-bold">
+                  {formatVND(grandCostVAT, displayUnit)}
+                </td>
+                <td className={`py-2.5 px-3 text-right font-bold ${grandProfit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+                  {formatVND(grandProfit, displayUnit)}
+                </td>
+                <td className="py-2.5 px-3 text-center text-purple-300 font-bold">
+                  {formatPercent(grandRatio)}
+                </td>
+                <td className="py-2.5 px-3 text-right text-cyan-400 font-bold">
+                  {grandDataCount.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-2.5 px-3 text-right text-slate-300 font-bold">
+                  {formatVND(avgCpPerData, displayUnit)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};

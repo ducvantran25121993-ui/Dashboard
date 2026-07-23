@@ -46,6 +46,15 @@ export function formatChartAxisVND(value: number): string {
 }
 
 /**
+ * Helper to check if a region or service name is "Việt Kiều"
+ */
+export function isVietKieuRegion(name: string): boolean {
+  if (!name) return false;
+  const lower = name.toLowerCase().trim();
+  return lower.includes('việt kiều') || lower.includes('viet kieu');
+}
+
+/**
  * Enrich region data with computed metrics
  */
 export function enrichRegionData(region: RegionData): ComputedRegionMetrics {
