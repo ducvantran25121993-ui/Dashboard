@@ -1,6 +1,6 @@
 import { RegionData } from './data/revenueData';
 
-export type MonthTab = 1 | 2 | 3 | 4 | 5 | 6 | 'overview';
+export type MonthTab = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 'overview';
 
 export type DisplayUnit = 'full' | 'million' | 'billion';
 

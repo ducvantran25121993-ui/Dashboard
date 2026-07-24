@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Wallet, TrendingUp, Percent, Award, ArrowUpRight } from 'lucide-react';
+import { DollarSign, Wallet, TrendingUp, Percent, Award, ArrowUpRight, Users } from 'lucide-react';
 import { DisplayUnit } from '../types';
 import { formatVND, formatPercent, isVietKieuRegion } from '../utils/formatters';
 import { MonthDataset } from '../data/revenueData';
@@ -19,6 +19,18 @@ export const KPISummary: React.FC<KPISummaryProps> = ({ monthData, displayUnit }
   const totalProfit = totalRevenue - totalCostVAT;
   const avgCostRatio = totalRevenue > 0 ? (totalCostVAT / totalRevenue) * 100 : 0;
 
+  // Calculate total Data Dịch Vụ and Data Chat Luong for the month
+  const totalDataDichVu = monthData.regions.reduce((acc, r) => {
+    const svcSum = r.services.reduce((sSum, s) => sSum + (s.dataCount || 0), 0);
+    return acc + (svcSum > 0 ? svcSum : (r.totalData || 0));
+  }, 0);
+
+  const totalDataChatLuong = monthData.regions.reduce((acc, r) => {
+    return acc + (r.dataChatLuong || 0);
+  }, 0);
+
+  const qualityRatio = totalDataDichVu > 0 ? (totalDataChatLuong / totalDataDichVu) * 100 : 0;
+
   // Find top revenue region (excluding Việt Kiều)
   const nonVietKieuRegions = monthData.regions.filter((r) => !isVietKieuRegion(r.name));
   const topRevenueRegion = [...nonVietKieuRegions].sort((a, b) => b.revenue - a.revenue)[0];
@@ -30,7 +42,7 @@ export const KPISummary: React.FC<KPISummaryProps> = ({ monthData, displayUnit }
   )[0];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
       {/* Total Revenue */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
         <div className="flex items-center justify-between">
@@ -118,6 +130,35 @@ export const KPISummary: React.FC<KPISummaryProps> = ({ monthData, displayUnit }
             <span className="truncate">
               Tối ưu: {topRatioRegion ? topRatioRegion.name : 'N/A'}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Total Data DV & Data CL */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm hover:border-slate-700 transition-all">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Data DV & Data CL
+          </span>
+          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+            <Users className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="mt-3">
+          <div className="flex items-baseline gap-1.5">
+            <p className="text-2xl font-bold text-cyan-400 tracking-tight">
+              {totalDataDichVu.toLocaleString('vi-VN')}
+            </p>
+            <span className="text-xs text-slate-400 font-normal">DV</span>
+            <span className="text-slate-600 font-bold mx-0.5">•</span>
+            <span className="text-xl font-bold text-emerald-400">
+              {totalDataChatLuong.toLocaleString('vi-VN')}
+            </span>
+            <span className="text-xs text-slate-400 font-normal">CL</span>
+          </div>
+          <div className="flex items-center justify-between mt-2 text-xs text-slate-400 font-medium">
+            <span>Tỷ lệ chất lượng:</span>
+            <strong className="text-emerald-400">{formatPercent(qualityRatio)}</strong>
           </div>
         </div>
       </div>

@@ -82,46 +82,111 @@ function parseNumber(val: string | undefined): number {
 }
 
 // Parse 'Doanh Thu Theo Tháng' sheet
-function parseMonthlySheet(csvText: string): MonthDataset[] {
+export function parseMonthlySheet(csvText: string): MonthDataset[] {
   const rows = parseCSV(csvText);
   if (rows.length < 2) return MONTHLY_DATA;
 
-  const monthConfigs = [
+  const defaults = [
     { month: 1, label: 'Tháng 1', regionCol: 0, svcCol: 1, cpSvcCol: 2, cpTongCol: 3, vatCol: 4, revCol: 5, pctCol: 6, svcDataCol: 7, regDataCol: 8 },
     { month: 2, label: 'Tháng 2', regionCol: 9, svcCol: 10, cpSvcCol: 11, cpTongCol: 12, vatCol: 13, revCol: 14, pctCol: 15, svcDataCol: 16, regDataCol: 17 },
     { month: 3, label: 'Tháng 3', regionCol: 18, svcCol: 19, cpSvcCol: 20, cpTongCol: -1, vatCol: 21, revCol: 22, pctCol: 23, svcDataCol: 24, regDataCol: 25 },
     { month: 4, label: 'Tháng 4', regionCol: 26, svcCol: 27, cpSvcCol: 28, cpTongCol: -1, vatCol: 29, revCol: 30, pctCol: 31, svcDataCol: 32, regDataCol: 33 },
     { month: 5, label: 'Tháng 5', regionCol: 34, svcCol: 35, cpSvcCol: 36, cpTongCol: -1, vatCol: 37, revCol: 38, pctCol: 39, svcDataCol: 40, regDataCol: 41 },
     { month: 6, label: 'Tháng 6', regionCol: 42, svcCol: 43, cpSvcCol: 44, cpTongCol: -1, vatCol: 45, revCol: 46, pctCol: 47, svcDataCol: 48, regDataCol: 49 },
+    { month: 7, label: 'Tháng 7', regionCol: 50, svcCol: 51, cpSvcCol: 52, cpTongCol: -1, vatCol: 53, revCol: 54, pctCol: 55, svcDataCol: 56, regDataCol: 57 },
   ];
+
+  // Try to dynamically detect month column headers in row 0 & 1
+  const monthConfigs = defaults.map((def) => {
+    let foundCol = -1;
+    const targetLabel = `Tháng ${def.month}`.toLowerCase();
+
+    for (let r = 0; r < Math.min(3, rows.length); r++) {
+      const row = rows[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c] ? row[c].trim().toLowerCase() : '';
+        if (cell === targetLabel || cell === `thang ${def.month}` || cell === `t${def.month}`) {
+          foundCol = c;
+          break;
+        }
+      }
+      if (foundCol !== -1) break;
+    }
+
+    if (foundCol !== -1) {
+      return {
+        ...def,
+        regionCol: foundCol,
+        svcCol: foundCol + 1,
+        cpSvcCol: foundCol + 2,
+        cpTongCol: -1,
+        vatCol: foundCol + 3,
+        revCol: foundCol + 4,
+        pctCol: foundCol + 5,
+        svcDataCol: foundCol + 6,
+        regDataCol: foundCol + 7,
+      };
+    }
+    return def;
+  });
 
   const datasets: MonthDataset[] = [];
 
-  monthConfigs.forEach(cfg => {
+  const getCell = (row: string[], colIdx: number) =>
+    colIdx >= 0 && colIdx < row.length ? row[colIdx] : '';
+
+  monthConfigs.forEach((cfg) => {
     let currentRegion: RegionData | null = null;
     const regions: RegionData[] = [];
 
     for (let r = 1; r < rows.length; r++) {
       const row = rows[r];
-      if (!row || row.length <= cfg.regionCol) continue;
+      if (!row) continue;
 
-      const regName = row[cfg.regionCol] ? row[cfg.regionCol].trim() : '';
-      const svcName = row[cfg.svcCol] ? row[cfg.svcCol].trim() : '';
-      const vat = parseNumber(row[cfg.vatCol]);
-      const rev = parseNumber(row[cfg.revCol]);
-      const regDataCount = parseNumber(row[cfg.regDataCol]);
-      const svcCp = parseNumber(row[cfg.cpSvcCol]);
-      const svcDataCount = parseNumber(row[cfg.svcDataCol]);
+      let regName = getCell(row, cfg.regionCol).trim();
+      if (
+        !regName &&
+        getCell(row, 0).trim() &&
+        (getCell(row, cfg.regDataCol) ||
+          getCell(row, cfg.svcDataCol) ||
+          getCell(row, cfg.vatCol) ||
+          getCell(row, cfg.revCol))
+      ) {
+        regName = getCell(row, 0).trim();
+      }
 
-      if (regName && regName !== 'Tổng' && regName !== 'TỔNG' && !regName.includes('Tổng Tất Cả')) {
+      let svcName = getCell(row, cfg.svcCol).trim();
+      if (
+        !svcName &&
+        getCell(row, 1).trim() &&
+        (getCell(row, cfg.svcDataCol) || getCell(row, cfg.cpSvcCol))
+      ) {
+        svcName = getCell(row, 1).trim();
+      }
+
+      const vat = parseNumber(getCell(row, cfg.vatCol));
+      const rev = parseNumber(getCell(row, cfg.revCol));
+      const regDataCount = parseNumber(getCell(row, cfg.regDataCol));
+      const svcCp = parseNumber(getCell(row, cfg.cpSvcCol));
+      const svcDataCount = parseNumber(getCell(row, cfg.svcDataCol));
+
+      if (
+        regName &&
+        regName !== 'Tổng' &&
+        regName !== 'TỔNG' &&
+        !regName.includes('Tổng Tất Cả') &&
+        !regName.toLowerCase().startsWith('tháng')
+      ) {
         currentRegion = {
           name: regName,
           costVAT: vat,
           revenue: rev,
-          cpDichVu: parseNumber(row[cfg.cpSvcCol]),
-          cpTong: cfg.cpTongCol >= 0 ? parseNumber(row[cfg.cpTongCol]) : 0,
+          cpDichVu: parseNumber(getCell(row, cfg.cpSvcCol)),
+          cpTong: cfg.cpTongCol >= 0 ? parseNumber(getCell(row, cfg.cpTongCol)) : 0,
           totalData: regDataCount,
-          services: []
+          dataChatLuong: regDataCount,
+          services: [],
         };
         regions.push(currentRegion);
       }
@@ -130,7 +195,7 @@ function parseMonthlySheet(csvText: string): MonthDataset[] {
         currentRegion.services.push({
           name: svcName,
           cp: svcCp,
-          dataCount: svcDataCount
+          dataCount: svcDataCount,
         });
       }
     }
@@ -139,12 +204,24 @@ function parseMonthlySheet(csvText: string): MonthDataset[] {
       datasets.push({
         month: cfg.month,
         label: cfg.label,
-        regions
+        regions,
       });
     }
   });
 
   return datasets.length > 0 ? datasets : MONTHLY_DATA;
+}
+
+function normalizeServiceName(raw: string): string {
+  if (!raw) return 'Khác';
+  const s = raw.trim();
+  const upper = s.toUpperCase();
+  if (upper === 'IMP' || upper === 'IMPLANT') return 'Implant';
+  if (upper === 'NIỀNG' || upper === 'NIENG') return 'Niềng';
+  if (upper === 'SỨ' || upper === 'SU') return 'Sứ';
+  if (upper === 'TH' || upper === 'TQ' || upper === 'TỔNG HỢP' || upper === 'TONG HOP') return 'TH';
+  if (upper === 'VIỆT KIỀU' || upper === 'VIET KIEU' || upper === 'VK') return 'Việt Kiều';
+  return s;
 }
 
 // Parse 'Data Ngày' sheet
@@ -187,7 +264,7 @@ function parseDailySheet(csvText: string): DailyRecord[] {
       monthNum,
       yearNum,
       region: lastRegion || 'Tổng',
-      service: serviceCell.trim(),
+      service: normalizeServiceName(serviceCell),
       totalBudget: parseNumber(totalBudgetCell),
       budgetVnd: parseNumber(budgetVndCell),
       leadTho: parseNumber(leadThoCell),
@@ -202,34 +279,75 @@ function parseDailySheet(csvText: string): DailyRecord[] {
 // Fetch live Google Sheet data
 export async function fetchGoogleSheetData(sheetUrl: string = DEFAULT_SHEET_URL): Promise<SheetFetchResult> {
   const spreadsheetId = extractSpreadsheetId(sheetUrl);
+  const cacheBust = Date.now();
 
-  // Fetch 'Doanh Thu Theo Tháng' (gid=918582651 or sheet name)
-  const monthCsvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=918582651`;
-  const dailyCsvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent('Data Ngày')}`;
+  // Multiple fallback endpoints with cache-busting to prevent browser caching stale CSVs
+  const monthCsvUrls = [
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=918582651&_t=${cacheBust}`,
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent('Doanh Thu Theo Tháng')}&_t=${cacheBust}`,
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=918582651&_t=${cacheBust}`
+  ];
+
+  const dailyCsvUrls = [
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent('Data Ngày')}&_t=${cacheBust}`,
+    `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&sheet=${encodeURIComponent('Data Ngày')}&_t=${cacheBust}`
+  ];
+
+  const fetchOptions: RequestInit = {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+    }
+  };
+
+  let monthText = '';
+  for (const url of monthCsvUrls) {
+    try {
+      const res = await fetch(url, fetchOptions);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && !text.includes('<!DOCTYPE html>') && !text.includes('Error') && text.length > 50) {
+          monthText = text;
+          break;
+        }
+      }
+    } catch {
+      // try next fallback URL
+    }
+  }
+
+  let dailyText = '';
+  for (const url of dailyCsvUrls) {
+    try {
+      const res = await fetch(url, fetchOptions);
+      if (res.ok) {
+        const text = await res.text();
+        if (text && !text.includes('<!DOCTYPE html>') && !text.includes('Error') && text.length > 50) {
+          dailyText = text;
+          break;
+        }
+      }
+    } catch {
+      // try next fallback URL
+    }
+  }
 
   try {
-    const [monthRes, dailyRes] = await Promise.all([
-      fetch(monthCsvUrl).catch(() => null),
-      fetch(dailyCsvUrl).catch(() => null),
-    ]);
-
     let monthlyData = MONTHLY_DATA;
     let dailyData: DailyRecord[] = [];
     let isLive = false;
 
-    if (monthRes && monthRes.ok) {
-      const monthText = await monthRes.text();
-      if (monthText && !monthText.includes('<!DOCTYPE html>') && !monthText.includes('Error')) {
-        monthlyData = parseMonthlySheet(monthText);
+    if (monthText) {
+      const parsed = parseMonthlySheet(monthText);
+      if (parsed && parsed.length > 0) {
+        monthlyData = parsed;
         isLive = true;
       }
     }
 
-    if (dailyRes && dailyRes.ok) {
-      const dailyText = await dailyRes.text();
-      if (dailyText && !dailyText.includes('<!DOCTYPE html>') && !dailyText.includes('Error')) {
-        dailyData = parseDailySheet(dailyText);
-      }
+    if (dailyText) {
+      dailyData = parseDailySheet(dailyText);
     }
 
     return {
@@ -240,7 +358,7 @@ export async function fetchGoogleSheetData(sheetUrl: string = DEFAULT_SHEET_URL)
       sourceUrl: sheetUrl,
     };
   } catch (error) {
-    console.error('Failed to fetch live Google Sheet data:', error);
+    console.error('Failed to parse live Google Sheet data:', error);
     return {
       monthlyData: MONTHLY_DATA,
       dailyData: [],

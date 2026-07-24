@@ -43,17 +43,21 @@ export const ServiceDataChart: React.FC<ServiceDataChartProps> = ({
   // Aggregate service data across all regions for the active month
   const serviceMap: Record<string, { name: string; dataCount: number; totalCp: number }> = {};
 
+  const normalizeSvc = (rawName: string) => {
+    let s = rawName.trim();
+    if (s.startsWith('HCM-')) s = s.replace('HCM-', '');
+    const upper = s.toUpperCase();
+    if (upper === 'IMP' || upper === 'IMPLANT') return 'Implant';
+    if (upper === 'NIỀNG' || upper === 'NIENG') return 'Niềng';
+    if (upper === 'SỨ' || upper === 'SU') return 'Sứ';
+    if (upper === 'TH' || upper === 'TQ' || upper === 'TỔNG HỢP') return 'TH';
+    if (upper === 'VIỆT KIỀU' || upper === 'VIET KIEU' || upper === 'VK') return 'Việt Kiều';
+    return s;
+  };
+
   regions.forEach((region) => {
     region.services.forEach((service) => {
-      // Normalize service name (e.g., 'HCM-Imp' -> 'Implant', 'HCM-Niềng' -> 'Niềng', 'HCM-Sứ' -> 'Sứ', 'HCM-TH' -> 'TH')
-      let normalizedName = service.name;
-      if (normalizedName.startsWith('HCM-')) {
-        const sub = normalizedName.replace('HCM-', '');
-        if (sub === 'Imp') normalizedName = 'Implant';
-        else if (sub === 'Niềng') normalizedName = 'Niềng';
-        else if (sub === 'Sứ') normalizedName = 'Sứ';
-        else if (sub === 'TH') normalizedName = 'TH';
-      }
+      const normalizedName = normalizeSvc(service.name);
 
       if (!serviceMap[normalizedName]) {
         serviceMap[normalizedName] = {

@@ -25,7 +25,18 @@ export default function App() {
 
   // Google Sheet live synchronization state
   const [sheetUrl, setSheetUrl] = useState<string>(DEFAULT_SHEET_URL);
-  const [monthlyDatasets, setMonthlyDatasets] = useState<MonthDataset[]>(MONTHLY_DATA);
+  const [monthlyDatasets, setMonthlyDatasets] = useState<MonthDataset[]>(() => {
+    try {
+      const cached = localStorage.getItem('monthly_sheet_datasets');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore storage error
+    }
+    return MONTHLY_DATA;
+  });
   const [dailyRecords, setDailyRecords] = useState<DailyRecord[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLive, setIsLive] = useState<boolean>(false);
@@ -38,6 +49,11 @@ export default function App() {
     const result = await fetchGoogleSheetData(url);
     if (result.monthlyData && result.monthlyData.length > 0) {
       setMonthlyDatasets(result.monthlyData);
+      try {
+        localStorage.setItem('monthly_sheet_datasets', JSON.stringify(result.monthlyData));
+      } catch {
+        // ignore storage error
+      }
     }
     setDailyRecords(result.dailyData);
     setLastUpdated(result.lastUpdated);
@@ -92,7 +108,11 @@ export default function App() {
 
         {activeTab === 'overview' ? (
           /* 6-Month Combined Overview View */
-          <SixMonthOverview displayUnit={displayUnit} monthlyData={monthlyDatasets} />
+          <SixMonthOverview
+            displayUnit={displayUnit}
+            monthlyData={monthlyDatasets}
+            dailyRecords={dailyRecords}
+          />
         ) : currentMonthData ? (
           /* Individual Month View (Tháng 1 - Tháng 6) */
           <div className="space-y-6">
@@ -140,6 +160,7 @@ export default function App() {
               dailyRecords={dailyRecords}
               activeMonth={currentMonthNum}
               monthLabel={currentMonthData.label}
+              regions={currentMonthData?.regions}
             />
 
             {/* Combined Comparison Chart: Revenue vs Cost VAT side-by-side */}
@@ -171,7 +192,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>Báo Cáo Doanh Thu Theo Tháng, Chi Phí (VAT) & Data Dịch Vụ Theo Ngày</p>
           <p className="text-slate-600">
-            Tự động đồng bộ với Google Sheet • Tháng 1 đến Tháng 6
+            Tự động đồng bộ với Google Sheet • Tháng 1 đến Tháng 7
           </p>
         </div>
       </footer>

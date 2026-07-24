@@ -54,11 +54,14 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
       0;
     const profit = revenue - costVAT;
     const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
-    const dataCount =
-      vkRegion?.totalData ||
-      vkRegion?.services?.reduce((sum, s) => sum + (s.dataCount || 0), 0) ||
-      0;
-    const cpPerData = dataCount > 0 ? cpDichVu / dataCount : 0;
+    const rawDataSvc =
+      vkRegion?.services?.reduce((sum, s) => sum + (s.dataCount || 0), 0) || 0;
+    const rawDataCL = vkRegion?.dataChatLuong ?? vkRegion?.totalData ?? 0;
+    const dataDichVu = rawDataSvc > 0 ? rawDataSvc : rawDataCL;
+    const dataChatLuong = rawDataCL;
+    const qualityRatio = dataDichVu > 0 ? (dataChatLuong / dataDichVu) * 100 : 0;
+    const cpPerDataSvc = dataDichVu > 0 ? cpDichVu / dataDichVu : 0;
+    const cpPerDataCL = dataChatLuong > 0 ? cpDichVu / dataChatLuong : 0;
     const isKpiMet = ratio <= 15.0;
 
     return {
@@ -69,8 +72,11 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
       cpDichVu,
       profit,
       ratio,
-      dataCount,
-      cpPerData,
+      dataDichVu,
+      dataChatLuong,
+      qualityRatio,
+      cpPerDataSvc,
+      cpPerDataCL,
       isKpiMet,
     };
   });
@@ -81,8 +87,11 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
   const grandCpDichVu = vietKieuMonthly.reduce((sum, m) => sum + m.cpDichVu, 0);
   const grandProfit = grandRevenue - grandCostVAT;
   const grandRatio = grandRevenue > 0 ? (grandCostVAT / grandRevenue) * 100 : 0;
-  const grandDataCount = vietKieuMonthly.reduce((sum, m) => sum + m.dataCount, 0);
-  const avgCpPerData = grandDataCount > 0 ? grandCpDichVu / grandDataCount : 0;
+  const grandDataDichVu = vietKieuMonthly.reduce((sum, m) => sum + m.dataDichVu, 0);
+  const grandDataChatLuong = vietKieuMonthly.reduce((sum, m) => sum + m.dataChatLuong, 0);
+  const grandQualityRatio = grandDataDichVu > 0 ? (grandDataChatLuong / grandDataDichVu) * 100 : 0;
+  const avgCpPerDataSvc = grandDataDichVu > 0 ? grandCpDichVu / grandDataDichVu : 0;
+  const avgCpPerDataCL = grandDataChatLuong > 0 ? grandCpDichVu / grandDataChatLuong : 0;
 
   // Selected month metrics if activeMonth is provided
   const activeMonthMetrics = activeMonth
@@ -93,7 +102,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-2 z-50 min-w-[220px]">
+        <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-2 z-50 min-w-[230px]">
           <p className="font-bold text-white text-sm border-b border-slate-800 pb-1 flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-amber-400">
               <Plane className="w-4 h-4" />
@@ -129,11 +138,25 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
               <span>% CP/DT:</span>
               <span className="font-bold text-purple-300">{formatPercent(data.ratio)}</span>
             </div>
-            <div className="flex justify-between items-center text-slate-400">
-              <span>Số lượng Data:</span>
-              <span className="font-bold text-cyan-400">
-                {data.dataCount.toLocaleString('vi-VN')} data
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-cyan-400 font-medium">Data Dịch Vụ:</span>
+              <span className="font-bold text-cyan-300">
+                {data.dataDichVu.toLocaleString('vi-VN')}
               </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span className="text-emerald-400 font-medium">Data CL (Chất Lượng):</span>
+              <span className="font-bold text-emerald-300">
+                {data.dataChatLuong.toLocaleString('vi-VN')}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-400">
+              <span>Tỷ Lệ Chất Lượng:</span>
+              <span className="font-bold text-emerald-400">{formatPercent(data.qualityRatio)}</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-400">
+              <span>CP / 1 Data DV:</span>
+              <span className="font-bold text-amber-300">{formatVND(data.cpPerDataSvc, displayUnit)}</span>
             </div>
           </div>
         </div>
@@ -248,14 +271,19 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
 
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-            Lượng Data Việt Kiều
+            Data Dịch Vụ & Data CL Việt Kiều
           </span>
           <p className="text-xl font-bold text-cyan-400 mt-1">
-            {(activeMonthMetrics ? activeMonthMetrics.dataCount : grandDataCount).toLocaleString('vi-VN')}{' '}
-            <span className="text-xs text-slate-400 font-normal">data</span>
+            {(activeMonthMetrics ? activeMonthMetrics.dataDichVu : grandDataDichVu).toLocaleString('vi-VN')}{' '}
+            <span className="text-xs text-slate-400 font-normal">DV</span>
+            <span className="text-slate-500 mx-1">•</span>
+            <span className="text-emerald-400 font-bold">
+              {(activeMonthMetrics ? activeMonthMetrics.dataChatLuong : grandDataChatLuong).toLocaleString('vi-VN')}
+            </span>{' '}
+            <span className="text-xs text-slate-400 font-normal">CL</span>
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
-            CP / 1 Data: <strong className="text-amber-300">{formatVND(activeMonthMetrics ? activeMonthMetrics.cpPerData : avgCpPerData, displayUnit)}</strong>
+            Tỷ lệ CL: <strong className="text-emerald-300">{formatPercent(activeMonthMetrics ? activeMonthMetrics.qualityRatio : grandQualityRatio)}</strong> • CP/Data DV: <strong className="text-amber-300">{formatVND(activeMonthMetrics ? activeMonthMetrics.cpPerDataSvc : avgCpPerDataSvc, displayUnit)}</strong>
           </p>
         </div>
       </div>
@@ -305,21 +333,19 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
               <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={11} tickLine={false} />
               <YAxis stroke="#94a3b8" fontSize={11} width={50} />
-              <Tooltip
-                formatter={(val: any, name: any) => [
-                  name === 'Số lượng Data'
-                    ? `${Number(val).toLocaleString('vi-VN')} data`
-                    : formatVND(Number(val), displayUnit),
-                  name,
-                ]}
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
-              />
+              <Tooltip content={<CustomTooltip />} />
               <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }} />
               <Bar
-                dataKey="dataCount"
-                name="Số lượng Data"
+                dataKey="dataDichVu"
+                name="Data Dịch Vụ"
                 fill="#06b6d4"
-                radius={[6, 6, 0, 0]}
+                radius={[4, 4, 0, 0]}
+              />
+              <Bar
+                dataKey="dataChatLuong"
+                name="Data CL (Chất Lượng)"
+                fill="#10b981"
+                radius={[4, 4, 0, 0]}
               />
             </BarChart>
           )}
@@ -331,7 +357,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
         <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <Calendar className="w-4 h-4 text-amber-400" />
-            Bảng Chi Tiết Việt Kiều Từng Tháng (Tháng 1 - Tháng 6)
+            Bảng Chi Tiết Việt Kiều Từng Tháng
           </span>
         </h3>
 
@@ -344,8 +370,10 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
                 <th className="py-2.5 px-3 text-right">Chi Phí (VAT)</th>
                 <th className="py-2.5 px-3 text-right">Lợi Nhuận</th>
                 <th className="py-2.5 px-3 text-center">% CP/DT</th>
-                <th className="py-2.5 px-3 text-right">Số Data</th>
-                <th className="py-2.5 px-3 text-right">CP / 1 Data</th>
+                <th className="py-2.5 px-3 text-right">Data Dịch Vụ</th>
+                <th className="py-2.5 px-3 text-right">Data CL</th>
+                <th className="py-2.5 px-3 text-right">Tỷ Lệ CL</th>
+                <th className="py-2.5 px-3 text-right">CP / Data DV</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
@@ -383,10 +411,16 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
                       {formatPercent(m.ratio)}
                     </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-cyan-400">
-                      {m.dataCount.toLocaleString('vi-VN')}
+                      {m.dataDichVu.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-400">
+                      {m.dataChatLuong.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-300">
+                      {formatPercent(m.qualityRatio)}
                     </td>
                     <td className="py-2.5 px-3 text-right text-slate-300">
-                      {formatVND(m.cpPerData, displayUnit)}
+                      {formatVND(m.cpPerDataSvc, displayUnit)}
                     </td>
                   </tr>
                 );
@@ -394,7 +428,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
             </tbody>
             <tfoot className="bg-slate-800/90 font-bold text-white border-t border-slate-700">
               <tr>
-                <td className="py-2.5 px-3">TỔNG 6 THÁNG</td>
+                <td className="py-2.5 px-3">TỔNG QUAN</td>
                 <td className="py-2.5 px-3 text-right text-emerald-400 font-bold">
                   {formatVND(grandRevenue, displayUnit)}
                 </td>
@@ -408,10 +442,16 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
                   {formatPercent(grandRatio)}
                 </td>
                 <td className="py-2.5 px-3 text-right text-cyan-400 font-bold">
-                  {grandDataCount.toLocaleString('vi-VN')}
+                  {grandDataDichVu.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-2.5 px-3 text-right text-emerald-400 font-bold">
+                  {grandDataChatLuong.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-2.5 px-3 text-right text-emerald-300 font-bold">
+                  {formatPercent(grandQualityRatio)}
                 </td>
                 <td className="py-2.5 px-3 text-right text-slate-300 font-bold">
-                  {formatVND(avgCpPerData, displayUnit)}
+                  {formatVND(avgCpPerDataSvc, displayUnit)}
                 </td>
               </tr>
             </tfoot>

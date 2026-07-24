@@ -6,8 +6,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
-  Cell,
 } from 'recharts';
 import { Users, ArrowUpDown, BarChart2, LayoutList } from 'lucide-react';
 import { RegionData } from '../data/revenueData';
@@ -25,30 +25,39 @@ export const RegionDataChart: React.FC<RegionDataChartProps> = ({
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc' | 'alpha'>('desc');
   const [isHorizontal, setIsHorizontal] = useState(false);
 
-  // Compute total data for the region (use region.totalData or sum of services dataCount)
-  const getRegionDataCount = (r: RegionData): number => {
-    if (r.totalData !== undefined && r.totalData > 0) return r.totalData;
-    return r.services.reduce((acc, s) => acc + (s.dataCount || 0), 0);
-  };
+  // Calculate totals
+  const totalDataDichVu = regions.reduce((acc, r) => {
+    const svcSum = r.services.reduce((sum, s) => sum + (s.dataCount || 0), 0);
+    return acc + (svcSum > 0 ? svcSum : (r.totalData || 0));
+  }, 0);
 
-  const grandTotalData = regions.reduce((acc, r) => acc + getRegionDataCount(r), 0);
+  const totalDataChatLuong = regions.reduce((acc, r) => {
+    return acc + (r.dataChatLuong || 0);
+  }, 0);
+
+  const grandQualityRatio = totalDataDichVu > 0 ? (totalDataChatLuong / totalDataDichVu) * 100 : 0;
 
   // Prepare and sort chart data
   const chartData = [...regions]
     .map((r) => {
-      const dataCount = getRegionDataCount(r);
+      const svcSum = r.services.reduce((sum, s) => sum + (s.dataCount || 0), 0);
+      const dataDichVu = svcSum > 0 ? svcSum : (r.totalData || 0);
+      const dataChatLuong = r.dataChatLuong || 0;
+      const qualityRatio = dataDichVu > 0 ? (dataChatLuong / dataDichVu) * 100 : 0;
       return {
         name: r.name,
-        dataCount,
+        dataDichVu,
+        dataChatLuong,
+        qualityRatio,
         costVAT: r.costVAT || 0,
         revenue: r.revenue || 0,
-        sharePercent: grandTotalData > 0 ? (dataCount / grandTotalData) * 100 : 0,
+        sharePercent: totalDataDichVu > 0 ? (dataDichVu / totalDataDichVu) * 100 : 0,
         services: r.services,
       };
     })
     .sort((a, b) => {
-      if (sortOrder === 'desc') return b.dataCount - a.dataCount;
-      if (sortOrder === 'asc') return a.dataCount - b.dataCount;
+      if (sortOrder === 'desc') return b.dataDichVu - a.dataDichVu;
+      if (sortOrder === 'asc') return a.dataDichVu - b.dataDichVu;
       return a.name.localeCompare(b.name);
     });
 
@@ -56,19 +65,31 @@ export const RegionDataChart: React.FC<RegionDataChartProps> = ({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-1.5 z-50 min-w-[210px]">
+        <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-1.5 z-50 min-w-[220px]">
           <p className="font-bold text-white text-sm border-b border-slate-800 pb-1 flex items-center justify-between">
             <span>{data.name}</span>
             <span className="text-cyan-400 font-semibold">{monthLabel}</span>
           </p>
           <div className="flex justify-between items-center text-slate-300 pt-1">
-            <span className="text-cyan-400 font-medium">Tổng Data:</span>
+            <span className="text-cyan-400 font-medium">Data Dịch Vụ:</span>
             <span className="font-bold text-cyan-300 text-sm">
-              {data.dataCount.toLocaleString('vi-VN')} data
+              {data.dataDichVu.toLocaleString('vi-VN')}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-slate-300">
+            <span className="text-emerald-400 font-medium">Data CL (Chất Lượng):</span>
+            <span className="font-bold text-emerald-300 text-sm">
+              {data.dataChatLuong.toLocaleString('vi-VN')}
             </span>
           </div>
           <div className="flex justify-between items-center text-slate-400">
-            <span>Tỷ trọng Data:</span>
+            <span>Tỷ Lệ Chất Lượng:</span>
+            <span className="font-bold text-emerald-400">
+              {formatPercent(data.qualityRatio)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-slate-400">
+            <span>Tỷ trọng Data DV:</span>
             <span className="font-semibold text-slate-200">
               {formatPercent(data.sharePercent)}
             </span>
@@ -80,7 +101,7 @@ export const RegionDataChart: React.FC<RegionDataChartProps> = ({
                 {data.services.map((s: any, idx: number) => (
                   <div key={idx} className="flex justify-between text-slate-300">
                     <span className="text-slate-400">{s.name}:</span>
-                    <span className="font-semibold">{s.dataCount}</span>
+                    <span className="font-semibold">{s.dataCount || 0}</span>
                   </div>
                 ))}
               </div>
@@ -101,11 +122,13 @@ export const RegionDataChart: React.FC<RegionDataChartProps> = ({
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
               <Users className="w-4 h-4" />
             </div>
-            <span>Data Tháng Theo Từng Khu Vực (Cột Data)</span>
+            <span>Data Dịch Vụ & Data CL Theo Khu Vực</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            {monthLabel} • Tổng lượng Data toàn hệ thống:{' '}
-            <strong className="text-cyan-400">{grandTotalData.toLocaleString('vi-VN')} data</strong>
+            {monthLabel} • Data DV:{' '}
+            <strong className="text-cyan-400">{totalDataDichVu.toLocaleString('vi-VN')}</strong> • Data CL:{' '}
+            <strong className="text-emerald-400">{totalDataChatLuong.toLocaleString('vi-VN')}</strong>{' '}
+            <span className="text-slate-500">(Tỷ lệ CL: {formatPercent(grandQualityRatio)})</span>
           </p>
         </div>
 
@@ -184,15 +207,9 @@ export const RegionDataChart: React.FC<RegionDataChartProps> = ({
                 width={85}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Bar dataKey="dataCount" name="Số lượng Data" radius={[0, 6, 6, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={index === 0 ? '#06b6d4' : '#0891b2'}
-                    opacity={index === 0 ? 1 : 0.85}
-                  />
-                ))}
-              </Bar>
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }} />
+              <Bar dataKey="dataDichVu" name="Data Dịch Vụ" fill="#06b6d4" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="dataChatLuong" name="Data CL (Chất Lượng)" fill="#10b981" radius={[0, 4, 4, 0]} />
             </BarChart>
           ) : (
             <BarChart
@@ -215,15 +232,9 @@ export const RegionDataChart: React.FC<RegionDataChartProps> = ({
                 width={50}
               />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
-              <Bar dataKey="dataCount" name="Số lượng Data" radius={[6, 6, 0, 0]}>
-                {chartData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={index === 0 ? '#06b6d4' : '#0891b2'}
-                    opacity={index === 0 ? 1 : 0.85}
-                  />
-                ))}
-              </Bar>
+              <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '12px', fontSize: '12px' }} />
+              <Bar dataKey="dataDichVu" name="Data Dịch Vụ" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="dataChatLuong" name="Data CL (Chất Lượng)" fill="#10b981" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>

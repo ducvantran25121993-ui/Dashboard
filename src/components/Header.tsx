@@ -22,7 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 4, label: 'Tháng 4' },
     { id: 5, label: 'Tháng 5' },
     { id: 6, label: 'Tháng 6' },
-    { id: 'overview', label: 'Tổng Quan 6 Tháng' },
+    { id: 7, label: 'Tháng 7' },
+    { id: 'overview', label: 'Tổng Quan' },
   ];
 
   return (

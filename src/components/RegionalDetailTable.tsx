@@ -28,7 +28,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRegions, setExpandedRegions] = useState<Record<string, boolean>>({});
-  const [sortField, setSortField] = useState<'revenue' | 'costVAT' | 'profit' | 'ratio' | 'name'>('revenue');
+  const [sortField, setSortField] = useState<'revenue' | 'costVAT' | 'profit' | 'ratio' | 'name' | 'dataTong' | 'dataChatLuong'>('revenue');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   const toggleExpand = (regionName: string) => {
@@ -38,7 +38,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
     }));
   };
 
-  const handleSort = (field: 'revenue' | 'costVAT' | 'profit' | 'ratio' | 'name') => {
+  const handleSort = (field: 'revenue' | 'costVAT' | 'profit' | 'ratio' | 'name' | 'dataTong' | 'dataChatLuong') => {
     if (sortField === field) {
       setSortOrder((prev) => (prev === 'desc' ? 'asc' : 'desc'));
     } else {
@@ -54,12 +54,16 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
       const costVAT = r.costVAT || 0;
       const profit = revenue - costVAT;
       const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
+      const dataTong = r.services.reduce((sum, s) => sum + (s.dataCount || 0), 0) || r.totalData || 0;
+      const dataChatLuong = r.dataChatLuong || 0;
       return {
         ...r,
         revenue,
         costVAT,
         profit,
         ratio,
+        dataTong,
+        dataChatLuong,
       };
     })
     .filter((r) => {
@@ -75,6 +79,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
       else if (sortField === 'costVAT') result = a.costVAT - b.costVAT;
       else if (sortField === 'profit') result = a.profit - b.profit;
       else if (sortField === 'ratio') result = a.ratio - b.ratio;
+      else if (sortField === 'dataTong') result = a.dataTong - b.dataTong;
+      else if (sortField === 'dataChatLuong') result = a.dataChatLuong - b.dataChatLuong;
 
       return sortOrder === 'desc' ? -result : result;
     });
@@ -87,6 +93,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
   const totalCostVAT = processedRegions.reduce((sum, r) => sum + r.costVAT, 0);
   const totalProfit = totalRevenue - totalCostVAT;
   const totalRatio = totalRevenue > 0 ? (totalCostVAT / totalRevenue) * 100 : 0;
+  const totalDataTong = processedRegions.reduce((sum, r) => sum + r.dataTong, 0);
+  const totalDataChatLuong = processedRegions.reduce((sum, r) => sum + r.dataChatLuong, 0);
 
   const handleExportCSV = () => {
     const csvRows = processedRegions.flatMap((r) => {
@@ -95,6 +103,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
           {
             'Khu Vực': r.name,
             'Dịch Vụ': 'Tổng',
+            'Data Dịch Vụ': r.dataTong,
+            'Data CL': r.dataChatLuong,
             'Doanh Thu (VNĐ)': r.revenue,
             'Chi Phí VAT (VNĐ)': r.costVAT,
             'CP Dịch Vụ (VNĐ)': r.cpDichVu || 0,
@@ -107,10 +117,11 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
       return r.services.map((s) => ({
         'Khu Vực': r.name,
         'Dịch Vụ': s.name,
+        'Data Dịch Vụ': s.dataCount || 0,
+        'Data CL': s.dataChatLuong || 0,
         'Doanh Thu (VNĐ)': r.revenue,
         'Chi Phí VAT (VNĐ)': r.costVAT,
         'CP Dịch Vụ (VNĐ)': s.cp,
-        'Khách Hàng (Data)': s.dataCount || 0,
         'Lợi Nhuận (VNĐ)': r.profit,
         'Tỷ Lệ CP/DT (%)': r.ratio.toFixed(2),
       }));
@@ -162,10 +173,10 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="bg-slate-800/80 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
             <tr>
-              <th className="py-3 px-4 w-10"></th>
+              <th className="py-3 px-3 w-10"></th>
               <th
                 onClick={() => handleSort('name')}
-                className="py-3 px-4 cursor-pointer hover:text-white"
+                className="py-3 px-3 cursor-pointer hover:text-white"
               >
                 <div className="flex items-center gap-1">
                   <span>Khu Vực</span>
@@ -173,8 +184,26 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                 </div>
               </th>
               <th
+                onClick={() => handleSort('dataTong')}
+                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+              >
+                <div className="flex items-center justify-end gap-1">
+                  <span className="text-cyan-400">Data Dịch Vụ</span>
+                  <ArrowUpDown className="w-3 h-3 text-cyan-400" />
+                </div>
+              </th>
+              <th
+                onClick={() => handleSort('dataChatLuong')}
+                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+              >
+                <div className="flex items-center justify-end gap-1">
+                  <span className="text-emerald-400">Data CL</span>
+                  <ArrowUpDown className="w-3 h-3 text-emerald-400" />
+                </div>
+              </th>
+              <th
                 onClick={() => handleSort('revenue')}
-                className="py-3 px-4 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
                   <span>Doanh Thu</span>
@@ -183,7 +212,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               </th>
               <th
                 onClick={() => handleSort('costVAT')}
-                className="py-3 px-4 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
                   <span>Chi Phí (VAT)</span>
@@ -192,7 +221,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               </th>
               <th
                 onClick={() => handleSort('profit')}
-                className="py-3 px-4 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
                   <span>Lợi Nhuận</span>
@@ -201,20 +230,20 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               </th>
               <th
                 onClick={() => handleSort('ratio')}
-                className="py-3 px-4 text-center cursor-pointer hover:text-white"
+                className="py-3 px-3 text-center cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-center gap-1">
-                  <span>% CP/DT (KPI ≤15%)</span>
+                  <span>% CP/DT (≤15%)</span>
                   <ArrowUpDown className="w-3 h-3 text-purple-500" />
                 </div>
               </th>
-              <th className="py-3 px-4 text-center">Dịch Vụ</th>
+              <th className="py-3 px-3 text-center">Dịch Vụ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 bg-slate-900/50">
             {processedRegions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-8 text-slate-500">
+                <td colSpan={9} className="text-center py-8 text-slate-500">
                   Không tìm thấy khu vực nào phù hợp với từ khóa "{searchTerm}".
                 </td>
               </tr>
@@ -231,7 +260,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                         isExpanded ? 'bg-slate-800/30' : ''
                       }`}
                     >
-                      <td className="py-3 px-4 text-slate-500 text-center">
+                      <td className="py-3 px-3 text-slate-500 text-center">
                         {hasServices ? (
                           isExpanded ? (
                             <ChevronDown className="w-4 h-4 text-blue-400 inline" />
@@ -240,23 +269,29 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                           )
                         ) : null}
                       </td>
-                      <td className="py-3 px-4 font-bold text-white text-sm">
+                      <td className="py-3 px-3 font-bold text-white text-sm">
                         {r.name}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm">
+                      <td className="py-3 px-3 text-right font-bold text-cyan-400 text-sm">
+                        {r.dataTong.toLocaleString('vi-VN')}
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-emerald-400 text-sm">
+                        {r.dataChatLuong.toLocaleString('vi-VN')}
+                      </td>
+                      <td className="py-3 px-3 text-right font-bold text-emerald-400 text-sm">
                         {formatVND(r.revenue, displayUnit)}
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-amber-400 text-sm">
+                      <td className="py-3 px-3 text-right font-bold text-amber-400 text-sm">
                         {formatVND(r.costVAT, displayUnit)}
                       </td>
                       <td
-                        className={`py-3 px-4 text-right font-bold text-sm ${
+                        className={`py-3 px-3 text-right font-bold text-sm ${
                           r.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
                         }`}
                       >
                         {formatVND(r.profit, displayUnit)}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 text-center">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
                             r.ratio <= 15
@@ -274,7 +309,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                           {formatPercent(r.ratio)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center text-slate-400">
+                      <td className="py-3 px-3 text-center text-slate-400">
                         <span className="bg-slate-800 border border-slate-700 px-2 py-0.5 rounded-md text-[11px] font-medium text-slate-300">
                           {r.services.length} gói dịch vụ
                         </span>
@@ -282,34 +317,93 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                     </tr>
 
                     {/* Sub-rows for Services if expanded */}
-                    {isExpanded &&
-                      r.services.map((svc, idx) => (
+                    {isExpanded && (
+                      <>
+                        {r.services.map((svc, idx) => {
+                          const svcDataDV = svc.dataCount || 0;
+                          const svcDataCL =
+                            svc.dataChatLuong !== undefined
+                              ? svc.dataChatLuong
+                              : r.dataTong > 0
+                              ? Math.round(svcDataDV * (r.dataChatLuong / r.dataTong))
+                              : svcDataDV;
+
+                          return (
+                            <tr
+                              key={`${r.name}-svc-${idx}`}
+                              className="bg-slate-950/60 border-l-2 border-l-blue-500 text-slate-400"
+                            >
+                              <td></td>
+                              <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-medium text-slate-300">
+                                <Layers className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                                <span>{svc.name}</span>
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-cyan-300">
+                                {svcDataDV ? `${svcDataDV.toLocaleString('vi-VN')} data` : '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right font-semibold text-emerald-400">
+                                {svcDataCL ? `${svcDataCL.toLocaleString('vi-VN')} data` : '—'}
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-slate-500">—</td>
+                              <td className="py-2.5 px-3 text-right text-amber-300/90 font-medium">
+                                CP DV: {formatVND(svc.cp, displayUnit)}
+                              </td>
+                              <td className="py-2.5 px-3 text-right text-slate-500">—</td>
+                              <td className="py-2.5 px-3 text-center text-slate-500">—</td>
+                              <td></td>
+                            </tr>
+                          );
+                        })}
+
+                        {/* Summary / Total row for this specific expanded region */}
                         <tr
-                          key={`${r.name}-svc-${idx}`}
-                          className="bg-slate-950/60 border-l-2 border-l-blue-500 text-slate-400"
+                          key={`${r.name}-subtotal`}
+                          className="bg-slate-900/90 border-t border-b border-slate-700/80 font-bold text-slate-100"
                         >
                           <td></td>
-                          <td className="py-2.5 px-4 pl-8 flex items-center gap-2 font-medium text-slate-300">
-                            <Layers className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                            <span>{svc.name}</span>
+                          <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-extrabold text-cyan-300">
+                            <span className="text-xs uppercase tracking-wider text-cyan-300 font-extrabold">
+                              TỔNG {r.name.toUpperCase()}
+                            </span>
                           </td>
-                          <td className="py-2.5 px-4 text-right text-slate-500">—</td>
-                          <td className="py-2.5 px-4 text-right text-amber-300/90 font-medium">
-                            CP DV: {formatVND(svc.cp, displayUnit)}
+                          <td className="py-2.5 px-3 text-right font-extrabold text-cyan-400">
+                            {r.dataTong.toLocaleString('vi-VN')}
                           </td>
-                          <td className="py-2.5 px-4 text-right text-slate-400">
-                            {svc.dataCount ? (
-                              <span className="text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
-                                {svc.dataCount} Khách Data
-                              </span>
-                            ) : (
-                              '—'
-                            )}
+                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400">
+                            {r.dataChatLuong.toLocaleString('vi-VN')}
                           </td>
-                          <td className="py-2.5 px-4 text-center text-slate-500">—</td>
-                          <td></td>
+                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400">
+                            {formatVND(r.revenue, displayUnit)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-extrabold text-amber-400">
+                            {formatVND(r.costVAT, displayUnit)}
+                          </td>
+                          <td
+                            className={`py-2.5 px-3 text-right font-extrabold ${
+                              r.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
+                            }`}
+                          >
+                            {formatVND(r.profit, displayUnit)}
+                          </td>
+                          <td className="py-2.5 px-3 text-center">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                                r.ratio <= 15
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                  : r.ratio <= 35
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                              }`}
+                            >
+                              {formatPercent(r.ratio)}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-bold">
+                            {r.services.length} gói DV
+                          </td>
                         </tr>
-                      ))}
+                      </>
+                    )}
                   </React.Fragment>
                 );
               })
@@ -320,32 +414,40 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
           {processedRegions.length > 0 && (
             <tfoot className="bg-slate-800/90 font-bold text-white border-t-2 border-slate-700">
               <tr>
-                <td className="py-3 px-4"></td>
-                <td className="py-3 px-4 text-sm uppercase text-slate-300">
-                  Tổng Cộng ({processedRegions.length} Khu Vực)
+                <td className="py-3 px-3"></td>
+                <td className="py-3.5 px-3 text-sm font-extrabold uppercase text-slate-200">
+                  TỔNG KHU VỰC
                   <span className="block text-[11px] normal-case text-emerald-400 font-normal">
-                    (Đã trừ Doanh Thu Việt Kiều)
+                    ({processedRegions.length} Khu Vực • Đã trừ Doanh Thu Việt Kiều)
                   </span>
                 </td>
-                <td className="py-3 px-4 text-right text-emerald-400 text-base">
+                <td className="py-3.5 px-3 text-right text-cyan-400 text-base font-extrabold">
+                  {totalDataTong.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-3.5 px-3 text-right text-emerald-400 text-base font-extrabold">
+                  {totalDataChatLuong.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-3.5 px-3 text-right text-emerald-400 text-base font-extrabold">
                   {formatVND(totalRevenue, displayUnit)}
                 </td>
-                <td className="py-3 px-4 text-right text-amber-400 text-base">
+                <td className="py-3.5 px-3 text-right text-amber-400 text-base font-extrabold">
                   {formatVND(totalCostVAT, displayUnit)}
                 </td>
                 <td
-                  className={`py-3 px-4 text-right text-base ${
+                  className={`py-3.5 px-3 text-right text-base font-extrabold ${
                     totalProfit >= 0 ? 'text-blue-400' : 'text-rose-400'
                   }`}
                 >
                   {formatVND(totalProfit, displayUnit)}
                 </td>
-                <td className="py-3 px-4 text-center">
-                  <span className="bg-slate-700 text-purple-300 px-2.5 py-1 rounded-full text-xs font-bold border border-slate-600">
+                <td className="py-3.5 px-3 text-center">
+                  <span className="bg-slate-700/80 text-purple-300 px-3 py-1 rounded-full text-xs font-bold border border-slate-600">
                     {formatPercent(totalRatio)}
                   </span>
                 </td>
-                <td></td>
+                <td className="py-3.5 px-3 text-center text-slate-400 text-xs font-semibold">
+                  {processedRegions.reduce((sum, r) => sum + r.services.length, 0)} gói DV
+                </td>
               </tr>
             </tfoot>
           )}

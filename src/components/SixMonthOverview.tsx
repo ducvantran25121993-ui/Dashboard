@@ -29,6 +29,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { MONTHLY_DATA, MonthDataset } from '../data/revenueData';
+import { DailyRecord } from '../services/googleSheetsService';
 import { DisplayUnit } from '../types';
 import { formatVND, formatChartAxisVND, formatPercent, isVietKieuRegion } from '../utils/formatters';
 import { VietKieuChart } from './VietKieuChart';
@@ -36,6 +37,7 @@ import { VietKieuChart } from './VietKieuChart';
 interface SixMonthOverviewProps {
   displayUnit: DisplayUnit;
   monthlyData?: MonthDataset[];
+  dailyRecords?: DailyRecord[];
 }
 
 const SERVICE_COLORS = [
@@ -51,6 +53,7 @@ const SERVICE_COLORS = [
 export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
   displayUnit,
   monthlyData = MONTHLY_DATA,
+  dailyRecords = [],
 }) => {
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>('all');
   const [serviceChartMode, setServiceChartMode] = useState<'donut' | 'bar'>('donut');
@@ -80,6 +83,32 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
     const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
     const isKpiMet = ratio <= 15.0;
 
+    // Calculate Data Tổng for this month
+    const dataTong = filteredRegions.reduce((sum, r) => {
+      const svcSum = r.services.reduce((sSum, s) => sSum + (s.dataCount || 0), 0);
+      return sum + (svcSum > 0 ? svcSum : (r.totalData || 0));
+    }, 0);
+
+    // Calculate Data Chất Lượng for this month (from Google Sheet region data, fallback to daily records)
+    const regionQualitySum = filteredRegions.reduce(
+      (sum, r) => sum + (r.dataChatLuong || 0),
+      0
+    );
+
+    let dataChatLuong = regionQualitySum;
+    if (dataChatLuong === 0) {
+      const monthDailyRecords = dailyRecords.filter((dr) => {
+        const matchMonth = dr.monthNum === month.month;
+        const matchRegion =
+          selectedRegionFilter === 'all' || dr.region === selectedRegionFilter;
+        return matchMonth && matchRegion;
+      });
+      dataChatLuong = monthDailyRecords.reduce(
+        (sum, dr) => sum + (dr.leadChatLuong || 0),
+        0
+      );
+    }
+
     return {
       monthLabel: month.label,
       monthNum: month.month,
@@ -88,6 +117,8 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       profit,
       ratio,
       isKpiMet,
+      dataTong,
+      dataChatLuong,
     };
   });
 
@@ -98,6 +129,9 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
   const grandRatio = grandRevenue > 0 ? (grandCostVAT / grandRevenue) * 100 : 0;
   const isGrandKpiMet = grandRatio <= 15.0;
 
+  const grandTotalData = monthlySummary.reduce((sum, m) => sum + m.dataTong, 0);
+  const grandQualityData = monthlySummary.reduce((sum, m) => sum + m.dataChatLuong, 0);
+
   const metKpiCount = monthlySummary.filter((m) => m.isKpiMet).length;
 
   // 1. Compute Total Data by Month across 6 Months
@@ -107,40 +141,45 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         ? m.regions
         : m.regions.filter((r) => r.name === selectedRegionFilter);
 
-    const totalData = filteredRegions.reduce((sum, r) => {
-      if (r.totalData !== undefined && r.totalData > 0) return sum + r.totalData;
-      return sum + r.services.reduce((sSum, s) => sSum + (s.dataCount || 0), 0);
+    const dataDichVu = filteredRegions.reduce((sum, r) => {
+      const svcSum = r.services.reduce((sSum, s) => sSum + (s.dataCount || 0), 0);
+      return sum + (svcSum > 0 ? svcSum : (r.totalData || 0));
+    }, 0);
+
+    const dataChatLuong = filteredRegions.reduce((sum, r) => {
+      return sum + (r.dataChatLuong || 0);
     }, 0);
 
     return {
       monthLabel: m.label,
       monthNum: m.month,
-      totalData,
+      dataDichVu,
+      dataChatLuong,
+      totalData: dataDichVu,
     };
   });
 
-  const grandTotalData6Months = monthlyTotalData.reduce((sum, m) => sum + m.totalData, 0);
-  const avgDataPerMonth = Math.round(grandTotalData6Months / (monthlySummary.length || 1));
+  const grandTotalData6Months = monthlyTotalData.reduce((sum, m) => sum + m.dataDichVu, 0);
 
   // 2. Compute Aggregated Data by Region across 6 Months
-  const regionDataMap: Record<string, { name: string; totalData: number; costVAT: number; revenue: number }> = {};
+  const regionDataMap: Record<string, { name: string; dataDichVu: number; dataChatLuong: number; totalData: number; costVAT: number; revenue: number }> = {};
   monthlyData.forEach((m) => {
     m.regions.forEach((r) => {
       if (selectedRegionFilter !== 'all' && r.name !== selectedRegionFilter) return;
       if (!regionDataMap[r.name]) {
-        regionDataMap[r.name] = { name: r.name, totalData: 0, costVAT: 0, revenue: 0 };
+        regionDataMap[r.name] = { name: r.name, dataDichVu: 0, dataChatLuong: 0, totalData: 0, costVAT: 0, revenue: 0 };
       }
-      const rData =
-        r.totalData && r.totalData > 0
-          ? r.totalData
-          : r.services.reduce((sum, s) => sum + (s.dataCount || 0), 0);
-      regionDataMap[r.name].totalData += rData;
+      const svcSum = r.services.reduce((sum, s) => sum + (s.dataCount || 0), 0);
+      const rDataSvc = svcSum > 0 ? svcSum : (r.totalData || 0);
+      regionDataMap[r.name].dataDichVu += rDataSvc;
+      regionDataMap[r.name].dataChatLuong += r.dataChatLuong || 0;
+      regionDataMap[r.name].totalData += rDataSvc;
       regionDataMap[r.name].costVAT += r.costVAT || 0;
       regionDataMap[r.name].revenue += r.revenue || 0;
     });
   });
 
-  const regionDataList = Object.values(regionDataMap).sort((a, b) => b.totalData - a.totalData);
+  const regionDataList = Object.values(regionDataMap).sort((a, b) => b.dataDichVu - a.dataDichVu);
 
   // 3. Compute Aggregated Data by Service across 6 Months
   const serviceDataMap: Record<string, { name: string; totalData: number; totalCp: number }> = {};
@@ -263,38 +302,48 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 shadow-sm">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Tổng Doanh Thu (6 Tháng)
+            Tổng Doanh Thu (Tổng Quan)
           </span>
           <p className="text-2xl font-bold text-emerald-400 mt-2">
             {formatVND(grandRevenue, displayUnit)}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Đã trừ DT Việt Kiều • TB: {formatVND(grandRevenue / 6, displayUnit)} / tháng
+            Đã trừ DT Việt Kiều • TB: {formatVND(grandRevenue / (monthlyData.length || 1), displayUnit)} / tháng
           </p>
         </div>
 
         <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 shadow-sm">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Tổng Chi Phí VAT (6 Tháng)
+            Tổng Chi Phí VAT (Tổng Quan)
           </span>
           <p className="text-2xl font-bold text-amber-400 mt-2">
             {formatVND(grandCostVAT, displayUnit)}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Trung bình: {formatVND(grandCostVAT / 6, displayUnit)} / tháng
+            Trung bình: {formatVND(grandCostVAT / (monthlyData.length || 1), displayUnit)} / tháng
           </p>
         </div>
 
         <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-5 shadow-sm">
           <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Tổng Lượng Data (6 Tháng)
+            Data Dịch Vụ & Data CL (Tổng Quan)
           </span>
-          <p className="text-2xl font-bold text-cyan-400 mt-2">
-            {grandTotalData6Months.toLocaleString('vi-VN')}{' '}
-            <span className="text-xs text-slate-400 font-normal">data</span>
-          </p>
-          <p className="text-xs text-slate-400 mt-1">
-            Trung bình: <strong className="text-slate-200">{avgDataPerMonth.toLocaleString('vi-VN')}</strong> data / tháng
+          <div className="flex items-baseline justify-between mt-2">
+            <div>
+              <p className="text-xl font-bold text-cyan-400">
+                {grandTotalData.toLocaleString('vi-VN')}{' '}
+                <span className="text-xs text-slate-400 font-normal">Data Dịch Vụ</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-emerald-400">
+                {grandQualityData.toLocaleString('vi-VN')}{' '}
+                <span className="text-xs text-slate-400 font-normal">Data CL</span>
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">
+            Tỷ lệ CL: <strong className="text-emerald-300">{formatPercent(grandTotalData > 0 ? (grandQualityData / grandTotalData) * 100 : 0)}</strong> • TB: {Math.round(grandTotalData / (monthlyData.length || 1)).toLocaleString('vi-VN')} Data DV / tháng
           </p>
         </div>
 
@@ -320,7 +369,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Đạt KPI: <strong className="text-emerald-400">{metKpiCount}/6 tháng</strong> (mục tiêu ≤ 15.0%)
+            Đạt KPI: <strong className="text-emerald-400">{metKpiCount}/{monthlyData.length} tháng</strong> (mục tiêu ≤ 15.0%)
           </p>
         </div>
       </div>
@@ -331,10 +380,10 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
           <div>
             <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-emerald-400" />
-              <span>Xu Hướng Doanh Thu vs Chi Phí (VAT) Qua 6 Tháng</span>
+              <span>Xu Hướng Doanh Thu vs Chi Phí (VAT) Theo Tháng</span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              So sánh tăng trưởng doanh thu và biến động chi phí VAT từ Tháng 1 đến Tháng 6
+              So sánh tăng trưởng doanh thu và biến động chi phí VAT qua các tháng
             </p>
           </div>
 
@@ -396,18 +445,18 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         </div>
       </div>
 
-      {/* Grid: 1) Biểu Đồ Data Tổng 6 Tháng & 2) Biểu Đồ Data Tổng Hợp Từng Dịch Vụ 6 Tháng */}
+      {/* Grid: 1) Biểu Đồ Data Dịch Vụ & Data CL 6 Tháng & 2) Biểu Đồ Data Tổng Hợp Từng Dịch Vụ 6 Tháng */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart 1: Biểu Đồ Data Tổng 6 Tháng (Theo Tháng / Khu Vực) */}
+        {/* Chart 1: Biểu Đồ Data Dịch Vụ & Data CL 6 Tháng (Theo Tháng / Khu Vực) */}
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-5 h-5 text-cyan-400" />
-                <span>Biểu Đồ Data Tổng 6 Tháng</span>
+                <span>Biểu Đồ Data Dịch Vụ & Data CL (6 Tháng)</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Tổng cộng {grandTotalData6Months.toLocaleString('vi-VN')} Data thu thập qua 6 tháng
+                {grandTotalData.toLocaleString('vi-VN')} Data Dịch Vụ • {grandQualityData.toLocaleString('vi-VN')} Data Chất Lượng
               </p>
             </div>
 
@@ -444,14 +493,32 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
                   <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={11} tickLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={11} width={45} />
                   <Tooltip
-                    formatter={(val: any) => [`${Number(val).toLocaleString('vi-VN')} data`, 'Tổng Data']}
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+                    content={({ active, payload, label }: any) => {
+                      if (active && payload && payload.length) {
+                        const dSvc = payload.find((p: any) => p.dataKey === 'dataDichVu')?.value || 0;
+                        const dCL = payload.find((p: any) => p.dataKey === 'dataChatLuong')?.value || 0;
+                        const pct = dSvc > 0 ? (dCL / dSvc) * 100 : 0;
+                        return (
+                          <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl text-xs space-y-1 z-50">
+                            <p className="font-bold text-white border-b border-slate-800 pb-1">{label}</p>
+                            <p className="text-cyan-400 font-semibold flex justify-between gap-4">
+                              <span>Data Dịch Vụ:</span> <span>{Number(dSvc).toLocaleString('vi-VN')}</span>
+                            </p>
+                            <p className="text-emerald-400 font-semibold flex justify-between gap-4">
+                              <span>Data CL:</span> <span>{Number(dCL).toLocaleString('vi-VN')}</span>
+                            </p>
+                            <p className="text-slate-300 text-[11px] pt-1 border-t border-slate-800 flex justify-between gap-4">
+                              <span>Tỷ Lệ Chất Lượng:</span> <span className="font-bold text-emerald-400">{formatPercent(pct)}</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
-                  <Bar dataKey="totalData" name="Số lượng Data" fill="#06b6d4" radius={[6, 6, 0, 0]}>
-                    {monthlyTotalData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#06b6d4' : '#0891b2'} />
-                    ))}
-                  </Bar>
+                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px' }} />
+                  <Bar dataKey="dataDichVu" name="Data Dịch Vụ" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="dataChatLuong" name="Data CL (Chất Lượng)" fill="#10b981" radius={[4, 4, 0, 0]} />
                 </BarChart>
               ) : (
                 <BarChart
@@ -463,10 +530,31 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
                   <XAxis type="number" stroke="#94a3b8" fontSize={11} />
                   <YAxis type="category" dataKey="name" stroke="#cbd5e1" fontSize={11} width={80} tickLine={false} />
                   <Tooltip
-                    formatter={(val: any) => [`${Number(val).toLocaleString('vi-VN')} data`, 'Tổng Data 6T']}
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px' }}
+                    content={({ active, payload }: any) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        const pct = data.dataDichVu > 0 ? (data.dataChatLuong / data.dataDichVu) * 100 : 0;
+                        return (
+                          <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl text-xs space-y-1 z-50">
+                            <p className="font-bold text-white border-b border-slate-800 pb-1">{data.name}</p>
+                            <p className="text-cyan-400 font-semibold flex justify-between gap-4">
+                              <span>Data Dịch Vụ:</span> <span>{Number(data.dataDichVu).toLocaleString('vi-VN')}</span>
+                            </p>
+                            <p className="text-emerald-400 font-semibold flex justify-between gap-4">
+                              <span>Data CL:</span> <span>{Number(data.dataChatLuong).toLocaleString('vi-VN')}</span>
+                            </p>
+                            <p className="text-slate-300 text-[11px] pt-1 border-t border-slate-800 flex justify-between gap-4">
+                              <span>Tỷ Lệ Chất Lượng:</span> <span className="font-bold text-emerald-400">{formatPercent(pct)}</span>
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
-                  <Bar dataKey="totalData" name="Số lượng Data" fill="#0891b2" radius={[0, 6, 6, 0]} />
+                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px' }} />
+                  <Bar dataKey="dataDichVu" name="Data Dịch Vụ 6T" fill="#0891b2" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="dataChatLuong" name="Data CL 6T" fill="#10b981" radius={[0, 4, 4, 0]} />
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -595,7 +683,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Calendar className="w-4 h-4 text-blue-400" />
-            <span>Bảng Aggregate Tổng Hợp 6 Tháng</span>
+            <span>Bảng Aggregate Tổng Quan</span>
           </h3>
           <div className="text-xs text-slate-400 flex items-center gap-2">
             <span className="font-medium">Chỉ tiêu KPI % CP/DT:</span>
@@ -610,6 +698,9 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
               <tr>
                 <th className="py-3 px-4">Tháng</th>
+                <th className="py-3 px-4 text-right">Data Dịch Vụ</th>
+                <th className="py-3 px-4 text-right">Data CL</th>
+                <th className="py-3 px-4 text-right">Tỷ Lệ CL</th>
                 <th className="py-3 px-4 text-right">Doanh Thu</th>
                 <th className="py-3 px-4 text-right">Chi Phí (VAT)</th>
                 <th className="py-3 px-4 text-right">Lợi Nhuận</th>
@@ -621,6 +712,15 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
               {monthlySummary.map((m) => (
                 <tr key={m.monthNum} className="hover:bg-slate-800/50 transition-colors">
                   <td className="py-3 px-4 font-bold text-white text-sm">{m.monthLabel}</td>
+                  <td className="py-3 px-4 text-right font-bold text-cyan-400 text-sm">
+                    {m.dataTong.toLocaleString('vi-VN')}
+                  </td>
+                  <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm">
+                    {m.dataChatLuong.toLocaleString('vi-VN')}
+                  </td>
+                  <td className="py-3 px-4 text-right font-semibold text-emerald-300 text-sm">
+                    {formatPercent(m.dataTong > 0 ? (m.dataChatLuong / m.dataTong) * 100 : 0)}
+                  </td>
                   <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm">
                     {formatVND(m.revenue, displayUnit)}
                   </td>
@@ -651,7 +751,16 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             </tbody>
             <tfoot className="bg-slate-800 font-bold text-white border-t-2 border-slate-700">
               <tr>
-                <td className="py-3.5 px-4 text-sm">TỔNG 6 THÁNG</td>
+                <td className="py-3.5 px-4 text-sm">TỔNG QUAN</td>
+                <td className="py-3.5 px-4 text-right text-cyan-400 text-base">
+                  {grandTotalData.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-3.5 px-4 text-right text-emerald-400 text-base">
+                  {grandQualityData.toLocaleString('vi-VN')}
+                </td>
+                <td className="py-3.5 px-4 text-right text-emerald-300 text-sm font-semibold">
+                  {formatPercent(grandTotalData > 0 ? (grandQualityData / grandTotalData) * 100 : 0)}
+                </td>
                 <td className="py-3.5 px-4 text-right text-emerald-400 text-base">
                   {formatVND(grandRevenue, displayUnit)}
                 </td>
@@ -682,6 +791,8 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
           </table>
         </div>
       </div>
+
+
     </div>
   );
 };
