@@ -56,6 +56,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
       const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
       const dataTong = r.services.reduce((sum, s) => sum + (s.dataCount || 0), 0) || r.totalData || 0;
       const dataChatLuong = r.dataChatLuong || 0;
+      const tyLeCL = dataTong > 0 ? (dataChatLuong / dataTong) * 100 : 0;
+      const cpPerData = dataTong > 0 ? costVAT / dataTong : 0;
       return {
         ...r,
         revenue,
@@ -64,6 +66,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
         ratio,
         dataTong,
         dataChatLuong,
+        tyLeCL,
+        cpPerData,
       };
     })
     .filter((r) => {
@@ -114,17 +118,26 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
           },
         ];
       }
-      return r.services.map((s) => ({
-        'Khu Vực': r.name,
-        'Dịch Vụ': s.name,
-        'Data Dịch Vụ': s.dataCount || 0,
-        'Data CL': s.dataChatLuong || 0,
-        'Doanh Thu (VNĐ)': r.revenue,
-        'Chi Phí VAT (VNĐ)': r.costVAT,
-        'CP Dịch Vụ (VNĐ)': s.cp,
-        'Lợi Nhuận (VNĐ)': r.profit,
-        'Tỷ Lệ CP/DT (%)': r.ratio.toFixed(2),
-      }));
+      return r.services.map((s) => {
+        const svcDataDV = s.dataCount || 0;
+        const svcDataCL =
+          s.dataChatLuong !== undefined
+            ? s.dataChatLuong
+            : r.dataTong > 0
+            ? Math.round(svcDataDV * (r.dataChatLuong / r.dataTong))
+            : svcDataDV;
+        return {
+          'Khu Vực': r.name,
+          'Dịch Vụ': s.name,
+          'Data Dịch Vụ': svcDataDV,
+          'Data CL': svcDataCL,
+          'Doanh Thu (VNĐ)': r.revenue,
+          'Chi Phí VAT (VNĐ)': r.costVAT,
+          'CP Dịch Vụ (VNĐ)': s.cp,
+          'Lợi Nhuận (VNĐ)': r.profit,
+          'Tỷ Lệ CP/DT (%)': r.ratio.toFixed(2),
+        };
+      });
     });
 
     exportToCSV(`Bao_Cao_Khu_Vuc_${monthLabel.replace(/\s+/g, '_')}.csv`, csvRows);
@@ -171,7 +184,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
       {/* Table View */}
       <div className="overflow-x-auto rounded-xl border border-slate-800">
         <table className="w-full text-left text-xs text-slate-300">
-          <thead className="bg-slate-800/80 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+          <thead className="bg-slate-800/80 text-slate-300 uppercase tracking-wider font-semibold border-b border-slate-800 text-[11px] sm:text-xs">
             <tr>
               <th className="py-3 px-3 w-10"></th>
               <th
@@ -180,7 +193,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               >
                 <div className="flex items-center gap-1">
                   <span>Khu Vực</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
@@ -188,8 +201,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                 className="py-3 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span className="text-cyan-400">Data Dịch Vụ</span>
-                  <ArrowUpDown className="w-3 h-3 text-cyan-400" />
+                  <span>Data Dịch Vụ</span>
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
@@ -197,8 +210,8 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                 className="py-3 px-3 text-right cursor-pointer hover:text-white"
               >
                 <div className="flex items-center justify-end gap-1">
-                  <span className="text-emerald-400">Data CL</span>
-                  <ArrowUpDown className="w-3 h-3 text-emerald-400" />
+                  <span>Data CL</span>
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
@@ -207,7 +220,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               >
                 <div className="flex items-center justify-end gap-1">
                   <span>Doanh Thu</span>
-                  <ArrowUpDown className="w-3 h-3 text-emerald-500" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
@@ -216,7 +229,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               >
                 <div className="flex items-center justify-end gap-1">
                   <span>Chi Phí (VAT)</span>
-                  <ArrowUpDown className="w-3 h-3 text-amber-500" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
@@ -225,7 +238,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               >
                 <div className="flex items-center justify-end gap-1">
                   <span>Lợi Nhuận</span>
-                  <ArrowUpDown className="w-3 h-3 text-blue-500" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th
@@ -234,7 +247,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
               >
                 <div className="flex items-center justify-center gap-1">
                   <span>% CP/DT (≤15%)</span>
-                  <ArrowUpDown className="w-3 h-3 text-purple-500" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
                 </div>
               </th>
               <th className="py-3 px-3 text-center">Dịch Vụ</th>
@@ -322,9 +335,9 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                         {r.services.map((svc, idx) => {
                           const svcDataDV = svc.dataCount || 0;
                           const svcDataCL =
-                            svc.dataChatLuong !== undefined
+                            svc.dataChatLuong && svc.dataChatLuong > 0
                               ? svc.dataChatLuong
-                              : r.dataTong > 0
+                              : r.dataTong > 0 && r.dataChatLuong > 0
                               ? Math.round(svcDataDV * (r.dataChatLuong / r.dataTong))
                               : svcDataDV;
 

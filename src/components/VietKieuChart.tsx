@@ -93,6 +93,10 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
   const avgCpPerDataSvc = grandDataDichVu > 0 ? grandCpDichVu / grandDataDichVu : 0;
   const avgCpPerDataCL = grandDataChatLuong > 0 ? grandCpDichVu / grandDataChatLuong : 0;
 
+  // Active months with actual data for Việt Kiều
+  const vkActiveMonths = vietKieuMonthly.filter((m) => m.revenue > 0 || m.costVAT > 0 || m.dataDichVu > 0);
+  const vkActiveCount = vkActiveMonths.length || 1;
+
   // Selected month metrics if activeMonth is provided
   const activeMonthMetrics = activeMonth
     ? vietKieuMonthly.find((m) => m.monthNum === activeMonth)
@@ -219,7 +223,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-            Doanh Thu Việt Kiều {activeMonth ? `(${activeMonthMetrics?.monthLabel})` : '(6 Tháng)'}
+            Doanh Thu Việt Kiều {activeMonth ? `(${activeMonthMetrics?.monthLabel})` : ''}
           </span>
           <p className="text-xl font-bold text-emerald-400 mt-1">
             {formatVND(
@@ -229,10 +233,10 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
           </p>
           <p className="text-[11px] text-slate-400 mt-0.5">
             {activeMonth
-              ? `Tỷ trọng 6 tháng: ${formatPercent(
+              ? `Tỷ trọng: ${formatPercent(
                   grandRevenue > 0 ? (activeMonthMetrics!.revenue / grandRevenue) * 100 : 0
                 )}`
-              : `Trung bình: ${formatVND(grandRevenue / 6, displayUnit)} / tháng`}
+              : `Trung bình: ${formatVND(grandRevenue / vkActiveCount, displayUnit)} / tháng`}
           </p>
         </div>
 

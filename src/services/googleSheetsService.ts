@@ -86,7 +86,7 @@ export function parseMonthlySheet(csvText: string): MonthDataset[] {
   const rows = parseCSV(csvText);
   if (rows.length < 2) return MONTHLY_DATA;
 
-  const defaults = [
+  const monthConfigs = [
     { month: 1, label: 'Tháng 1', regionCol: 0, svcCol: 1, cpSvcCol: 2, cpTongCol: 3, vatCol: 4, revCol: 5, pctCol: 6, svcDataCol: 7, regDataCol: 8 },
     { month: 2, label: 'Tháng 2', regionCol: 9, svcCol: 10, cpSvcCol: 11, cpTongCol: 12, vatCol: 13, revCol: 14, pctCol: 15, svcDataCol: 16, regDataCol: 17 },
     { month: 3, label: 'Tháng 3', regionCol: 18, svcCol: 19, cpSvcCol: 20, cpTongCol: -1, vatCol: 21, revCol: 22, pctCol: 23, svcDataCol: 24, regDataCol: 25 },
@@ -94,42 +94,8 @@ export function parseMonthlySheet(csvText: string): MonthDataset[] {
     { month: 5, label: 'Tháng 5', regionCol: 34, svcCol: 35, cpSvcCol: 36, cpTongCol: -1, vatCol: 37, revCol: 38, pctCol: 39, svcDataCol: 40, regDataCol: 41 },
     { month: 6, label: 'Tháng 6', regionCol: 42, svcCol: 43, cpSvcCol: 44, cpTongCol: -1, vatCol: 45, revCol: 46, pctCol: 47, svcDataCol: 48, regDataCol: 49 },
     { month: 7, label: 'Tháng 7', regionCol: 50, svcCol: 51, cpSvcCol: 52, cpTongCol: -1, vatCol: 53, revCol: 54, pctCol: 55, svcDataCol: 56, regDataCol: 57 },
+    { month: 8, label: 'Tháng 8', regionCol: 58, svcCol: 59, cpSvcCol: 60, cpTongCol: -1, vatCol: 61, revCol: 62, pctCol: 63, svcDataCol: 64, regDataCol: 65 },
   ];
-
-  // Try to dynamically detect month column headers in row 0 & 1
-  const monthConfigs = defaults.map((def) => {
-    let foundCol = -1;
-    const targetLabel = `Tháng ${def.month}`.toLowerCase();
-
-    for (let r = 0; r < Math.min(3, rows.length); r++) {
-      const row = rows[r];
-      if (!row) continue;
-      for (let c = 0; c < row.length; c++) {
-        const cell = row[c] ? row[c].trim().toLowerCase() : '';
-        if (cell === targetLabel || cell === `thang ${def.month}` || cell === `t${def.month}`) {
-          foundCol = c;
-          break;
-        }
-      }
-      if (foundCol !== -1) break;
-    }
-
-    if (foundCol !== -1) {
-      return {
-        ...def,
-        regionCol: foundCol,
-        svcCol: foundCol + 1,
-        cpSvcCol: foundCol + 2,
-        cpTongCol: -1,
-        vatCol: foundCol + 3,
-        revCol: foundCol + 4,
-        pctCol: foundCol + 5,
-        svcDataCol: foundCol + 6,
-        regDataCol: foundCol + 7,
-      };
-    }
-    return def;
-  });
 
   const datasets: MonthDataset[] = [];
 
@@ -140,65 +106,93 @@ export function parseMonthlySheet(csvText: string): MonthDataset[] {
     let currentRegion: RegionData | null = null;
     const regions: RegionData[] = [];
 
+    const defaultSvcNames = ['Implant', 'Niềng', 'Sứ', 'TH'];
+
     for (let r = 1; r < rows.length; r++) {
+      if (r >= 70) break; // Row 70 is the "Tổng" summary row for all months
       const row = rows[r];
       if (!row) continue;
 
       let regName = getCell(row, cfg.regionCol).trim();
-      if (
-        !regName &&
-        getCell(row, 0).trim() &&
-        (getCell(row, cfg.regDataCol) ||
-          getCell(row, cfg.svcDataCol) ||
-          getCell(row, cfg.vatCol) ||
-          getCell(row, cfg.revCol))
-      ) {
-        regName = getCell(row, 0).trim();
-      }
-
       let svcName = getCell(row, cfg.svcCol).trim();
-      if (
-        !svcName &&
-        getCell(row, 1).trim() &&
-        (getCell(row, cfg.svcDataCol) || getCell(row, cfg.cpSvcCol))
-      ) {
-        svcName = getCell(row, 1).trim();
-      }
 
       const vat = parseNumber(getCell(row, cfg.vatCol));
       const rev = parseNumber(getCell(row, cfg.revCol));
-      const regDataCount = parseNumber(getCell(row, cfg.regDataCol));
+      const rowDataCL = parseNumber(getCell(row, cfg.regDataCol));
       const svcCp = parseNumber(getCell(row, cfg.cpSvcCol));
       const svcDataCount = parseNumber(getCell(row, cfg.svcDataCol));
 
-      if (
-        regName &&
-        regName !== 'Tổng' &&
-        regName !== 'TỔNG' &&
-        !regName.includes('Tổng Tất Cả') &&
-        !regName.toLowerCase().startsWith('tháng')
-      ) {
+      const isHeaderOrTotal = (name: string) => {
+        const lower = name.toLowerCase().trim();
+        return (
+          lower === 'tổng' ||
+          lower.startsWith('tổng tất cả') ||
+          lower.startsWith('tháng') ||
+          lower.startsWith('khu vực') ||
+          lower === 'dịch vụ' ||
+          lower.includes('cp dịch vụ') ||
+          lower.includes('doanh thu')
+        );
+      };
+
+      if (isHeaderOrTotal(regName) || isHeaderOrTotal(svcName)) {
+        continue;
+      }
+
+      if (!regName && currentRegion && currentRegion.services.length >= 4 && (svcDataCount > 0 || rowDataCL > 0 || vat > 0 || rev > 0)) {
+        regName = 'Không Địa Chỉ';
+      }
+
+      if (regName) {
         currentRegion = {
           name: regName,
           costVAT: vat,
           revenue: rev,
-          cpDichVu: parseNumber(getCell(row, cfg.cpSvcCol)),
-          cpTong: cfg.cpTongCol >= 0 ? parseNumber(getCell(row, cfg.cpTongCol)) : 0,
-          totalData: regDataCount,
-          dataChatLuong: regDataCount,
+          cpDichVu: 0,
+          cpTong: cfg.cpTongCol >= 0 ? parseNumber(getCell(row, cfg.cpTongCol)) : vat,
+          totalData: 0,
+          dataChatLuong: rowDataCL || 0,
           services: [],
         };
         regions.push(currentRegion);
       }
 
-      if (currentRegion && svcName && svcName !== 'Tổng' && svcName !== 'TỔNG') {
+      if (currentRegion && !svcName && (svcDataCount > 0 || rowDataCL > 0 || svcCp > 0)) {
+        const idx = currentRegion.services.length % 4;
+        svcName = defaultSvcNames[idx] || 'Dịch Vụ Khác';
+      }
+
+      if (currentRegion && svcName) {
+        if (!currentRegion.dataChatLuong && rowDataCL) {
+          currentRegion.dataChatLuong = rowDataCL;
+        }
         currentRegion.services.push({
-          name: svcName,
+          name: normalizeServiceName(svcName),
           cp: svcCp,
           dataCount: svcDataCount,
+          dataChatLuong: rowDataCL || 0,
         });
       }
     }
+
+    // Accurately sum service CPs, Data Dịch Vụ, and Data Chất Lượng
+    regions.forEach((reg) => {
+      reg.cpDichVu = reg.services.reduce((acc, s) => acc + (s.cp || 0), 0);
+      if (!reg.cpDichVu && reg.costVAT) reg.cpDichVu = reg.costVAT;
+      if (!reg.cpTong) reg.cpTong = reg.cpDichVu;
+
+      const totalDataDV = reg.services.reduce((acc, s) => acc + (s.dataCount || 0), 0);
+      reg.totalData = totalDataDV;
+
+      const regCL = reg.dataChatLuong || 0;
+      reg.services.forEach((s) => {
+        if (totalDataDV > 0 && regCL > 0) {
+          s.dataChatLuong = Math.round((s.dataCount / totalDataDV) * regCL);
+        } else {
+          s.dataChatLuong = s.dataCount || 0;
+        }
+      });
+    });
 
     if (regions.length > 0) {
       datasets.push({
@@ -274,6 +268,92 @@ function parseDailySheet(csvText: string): DailyRecord[] {
   }
 
   return records;
+}
+
+// Merge daily records from 'Data Ngày' into monthly datasets when present
+export function mergeDailyIntoMonthly(monthlyData: MonthDataset[], dailyData: DailyRecord[]): MonthDataset[] {
+  if (!dailyData || dailyData.length === 0) return monthlyData;
+
+  const dailyByMonth = new Map<
+    number,
+    Map<
+      string,
+      {
+        totalData: number;
+        qualityData: number;
+        costVat: number;
+        services: Map<string, { cp: number; dataCount: number; dataChatLuong: number }>;
+      }
+    >
+  >();
+
+  dailyData.forEach((rec) => {
+    const m = rec.monthNum;
+    if (!m) return;
+    if (!dailyByMonth.has(m)) dailyByMonth.set(m, new Map());
+    const regMap = dailyByMonth.get(m)!;
+
+    const regName = rec.region || 'HCM';
+    if (!regMap.has(regName)) {
+      regMap.set(regName, {
+        totalData: 0,
+        qualityData: 0,
+        costVat: 0,
+        services: new Map(),
+      });
+    }
+
+    const regObj = regMap.get(regName)!;
+    regObj.totalData += rec.leadTho || 0;
+    regObj.qualityData += rec.leadChatLuong || 0;
+    regObj.costVat += rec.budgetVnd || 0;
+
+    const svcName = rec.service || 'Khác';
+    if (!regObj.services.has(svcName)) {
+      regObj.services.set(svcName, { cp: 0, dataCount: 0, dataChatLuong: 0 });
+    }
+    const svcObj = regObj.services.get(svcName)!;
+    svcObj.cp += rec.budgetVnd || 0;
+    svcObj.dataCount += rec.leadTho || 0;
+    svcObj.dataChatLuong += rec.leadChatLuong || 0;
+  });
+
+  return monthlyData.map((mDataset) => {
+    const mNum = mDataset.month;
+    const dailyRegMap = dailyByMonth.get(mNum);
+    if (!dailyRegMap) return mDataset;
+
+    const updatedRegions = mDataset.regions.map((reg) => {
+      const dReg = dailyRegMap.get(reg.name);
+      if (!dReg) return reg;
+
+      const totalData = dReg.totalData > 0 ? dReg.totalData : reg.totalData;
+      const dataChatLuong = dReg.qualityData > 0 ? dReg.qualityData : reg.dataChatLuong;
+
+      const updatedServices = reg.services.map((svc) => {
+        const dSvc = dReg.services.get(svc.name);
+        if (!dSvc) return svc;
+        return {
+          ...svc,
+          dataCount: dSvc.dataCount > 0 ? dSvc.dataCount : svc.dataCount,
+          dataChatLuong: dSvc.dataChatLuong > 0 ? dSvc.dataChatLuong : (svc as any).dataChatLuong,
+          cp: dSvc.cp > 0 ? dSvc.cp : svc.cp,
+        };
+      });
+
+      return {
+        ...reg,
+        totalData,
+        dataChatLuong,
+        services: updatedServices,
+      };
+    });
+
+    return {
+      ...mDataset,
+      regions: updatedRegions,
+    };
+  });
 }
 
 // Fetch live Google Sheet data

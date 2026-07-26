@@ -7,6 +7,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,6 +21,8 @@ import {
   Calendar,
   Building2,
   BarChart2,
+  BarChart3,
+  LineChart as LineIcon,
   Zap,
   CheckCircle2,
   XCircle,
@@ -27,6 +31,7 @@ import {
   Layers,
   PieChart as PieIcon,
   Activity,
+  DollarSign,
 } from 'lucide-react';
 import { MONTHLY_DATA, MonthDataset } from '../data/revenueData';
 import { DailyRecord } from '../services/googleSheetsService';
@@ -50,6 +55,37 @@ const SERVICE_COLORS = [
   '#f97316', // Orange
 ];
 
+const OVERVIEW_SERVICE_COLORS: Record<string, string> = {
+  'Implant': '#38bdf8',   // Sky Cyan
+  'Niềng': '#a855f7',     // Purple
+  'Sứ': '#f59e0b',        // Amber
+  'TH': '#10b981',        // Emerald
+  'Việt Kiều': '#ec4899', // Pink
+  'Khác': '#64748b',      // Slate
+};
+
+function getOverviewServiceColor(svcName: string, index: number = 0): string {
+  if (OVERVIEW_SERVICE_COLORS[svcName]) return OVERVIEW_SERVICE_COLORS[svcName];
+  const fallback = ['#6366f1', '#8b5cf6', '#06b6d4', '#f43f5e', '#84cc16'];
+  return fallback[index % fallback.length];
+}
+
+function normalizeOverviewServiceName(rawName: string, regionName: string): string {
+  if (!rawName) return 'Khác';
+  if (isVietKieuRegion(regionName) || rawName.includes('Việt Kiều') || rawName.includes('VK')) {
+    return 'Việt Kiều';
+  }
+  let s = rawName.trim();
+  if (s.startsWith('HCM-')) {
+    s = s.replace('HCM-', '');
+  }
+  if (s === 'Imp' || s.toLowerCase().includes('implant')) return 'Implant';
+  if (s === 'Niềng' || s.toLowerCase().includes('niềng')) return 'Niềng';
+  if (s === 'Sứ' || s.toLowerCase().includes('sứ')) return 'Sứ';
+  if (s === 'TH' || s.toLowerCase().includes('th')) return 'TH';
+  return s;
+}
+
 export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
   displayUnit,
   monthlyData = MONTHLY_DATA,
@@ -58,6 +94,8 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
   const [selectedRegionFilter, setSelectedRegionFilter] = useState<string>('all');
   const [serviceChartMode, setServiceChartMode] = useState<'donut' | 'bar'>('donut');
   const [dataTab, setDataTab] = useState<'month' | 'region'>('month');
+  const [monthlyServiceMetric, setMonthlyServiceMetric] = useState<'data' | 'cp'>('data');
+  const [monthlyServiceChartType, setMonthlyServiceChartType] = useState<'line' | 'bar' | 'area'>('line');
 
   // Extract list of unique regions across all months
   const allRegions = Array.from(
@@ -71,17 +109,12 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         ? month.regions
         : month.regions.filter((r) => r.name === selectedRegionFilter);
 
-    const revenue = filteredRegions.reduce((sum, r) => {
-      // Exclude Việt Kiều revenue when aggregating all regions
-      if (selectedRegionFilter === 'all' && isVietKieuRegion(r.name)) {
-        return sum;
-      }
-      return sum + (r.revenue || 0);
-    }, 0);
+    const revenue = filteredRegions.reduce(
+      (sum, r) => sum + (selectedRegionFilter === 'all' && isVietKieuRegion(r.name) ? 0 : (r.revenue || 0)),
+      0
+    );
     const costVAT = filteredRegions.reduce((sum, r) => sum + (r.costVAT || 0), 0);
     const profit = revenue - costVAT;
-    const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
-    const isKpiMet = ratio <= 15.0;
 
     // Calculate Data Tổng for this month
     const dataTong = filteredRegions.reduce((sum, r) => {
@@ -89,7 +122,11 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       return sum + (svcSum > 0 ? svcSum : (r.totalData || 0));
     }, 0);
 
-    // Calculate Data Chất Lượng for this month (from Google Sheet region data, fallback to daily records)
+    const ratio = revenue > 0 ? (costVAT / revenue) * 100 : 0;
+    const hasData = revenue > 0 || costVAT > 0 || dataTong > 0;
+    const isKpiMet = hasData && ratio <= 15.0;
+
+    // Calculate Data Chất Lượng for this month
     const regionQualitySum = filteredRegions.reduce(
       (sum, r) => sum + (r.dataChatLuong || 0),
       0
@@ -100,7 +137,9 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       const monthDailyRecords = dailyRecords.filter((dr) => {
         const matchMonth = dr.monthNum === month.month;
         const matchRegion =
-          selectedRegionFilter === 'all' || dr.region === selectedRegionFilter;
+          selectedRegionFilter === 'all'
+            ? true
+            : dr.region === selectedRegionFilter;
         return matchMonth && matchRegion;
       });
       dataChatLuong = monthDailyRecords.reduce(
@@ -116,13 +155,14 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       costVAT,
       profit,
       ratio,
+      hasData,
       isKpiMet,
       dataTong,
       dataChatLuong,
     };
   });
 
-  // Calculate total metrics across 6 months
+  // Calculate total metrics across all available months
   const grandRevenue = monthlySummary.reduce((acc, m) => acc + m.revenue, 0);
   const grandCostVAT = monthlySummary.reduce((acc, m) => acc + m.costVAT, 0);
   const grandProfit = grandRevenue - grandCostVAT;
@@ -132,9 +172,12 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
   const grandTotalData = monthlySummary.reduce((sum, m) => sum + m.dataTong, 0);
   const grandQualityData = monthlySummary.reduce((sum, m) => sum + m.dataChatLuong, 0);
 
-  const metKpiCount = monthlySummary.filter((m) => m.isKpiMet).length;
+  // Filter months that actually have data
+  const monthsWithData = monthlySummary.filter((m) => m.hasData);
+  const activeMonthsCount = monthsWithData.length || 1;
+  const metKpiCount = monthsWithData.filter((m) => m.isKpiMet).length;
 
-  // 1. Compute Total Data by Month across 6 Months
+  // 1. Compute Total Data by Month across All Months
   const monthlyTotalData = monthlyData.map((m) => {
     const filteredRegions =
       selectedRegionFilter === 'all'
@@ -161,7 +204,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
 
   const grandTotalData6Months = monthlyTotalData.reduce((sum, m) => sum + m.dataDichVu, 0);
 
-  // 2. Compute Aggregated Data by Region across 6 Months
+  // 2. Compute Aggregated Data by Region across All Months
   const regionDataMap: Record<string, { name: string; dataDichVu: number; dataChatLuong: number; totalData: number; costVAT: number; revenue: number }> = {};
   monthlyData.forEach((m) => {
     m.regions.forEach((r) => {
@@ -175,13 +218,13 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       regionDataMap[r.name].dataChatLuong += r.dataChatLuong || 0;
       regionDataMap[r.name].totalData += rDataSvc;
       regionDataMap[r.name].costVAT += r.costVAT || 0;
-      regionDataMap[r.name].revenue += r.revenue || 0;
+      regionDataMap[r.name].revenue += (selectedRegionFilter === 'all' && isVietKieuRegion(r.name) ? 0 : (r.revenue || 0));
     });
   });
 
   const regionDataList = Object.values(regionDataMap).sort((a, b) => b.dataDichVu - a.dataDichVu);
 
-  // 3. Compute Aggregated Data by Service across 6 Months
+  // 3. Compute Aggregated Data by Region across All Months
   const serviceDataMap: Record<string, { name: string; totalData: number; totalCp: number }> = {};
   monthlyData.forEach((m) => {
     m.regions.forEach((r) => {
@@ -213,8 +256,121 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
       ...s,
       sharePercent: totalServiceData6Months > 0 ? (s.totalData / totalServiceData6Months) * 100 : 0,
       cpPerData: s.totalData > 0 ? s.totalCp / s.totalData : 0,
-      color: SERVICE_COLORS[idx % SERVICE_COLORS.length],
+      color: getOverviewServiceColor(s.name, idx),
     }));
+
+  // 4. Compute Monthly Service Trends across All Months
+  const allServiceNamesSet = new Set<string>();
+
+  const monthlyServiceTrends = monthlyData.map((m) => {
+    const filteredRegions =
+      selectedRegionFilter === 'all'
+        ? m.regions
+        : m.regions.filter((r) => r.name === selectedRegionFilter);
+
+    const row: Record<string, any> = {
+      monthLabel: m.label,
+      monthNum: m.month,
+      totalMonthData: 0,
+      totalMonthCp: 0,
+    };
+
+    filteredRegions.forEach((r) => {
+      r.services.forEach((s) => {
+        const norm = normalizeOverviewServiceName(s.name, r.name);
+        allServiceNamesSet.add(norm);
+
+        const dKey = `data_${norm}`;
+        const cKey = `cp_${norm}`;
+
+        row[dKey] = (row[dKey] || 0) + (s.dataCount || 0);
+        row[cKey] = (row[cKey] || 0) + (s.cp || 0);
+        row.totalMonthData += s.dataCount || 0;
+        row.totalMonthCp += s.cp || 0;
+      });
+    });
+
+    return row;
+  });
+
+  const sortedOverviewServices = Array.from(allServiceNamesSet).sort((a, b) => {
+    const order = ['Implant', 'Niềng', 'Sứ', 'TH', 'Việt Kiều'];
+    const iA = order.indexOf(a);
+    const iB = order.indexOf(b);
+    if (iA !== -1 && iB !== -1) return iA - iB;
+    if (iA !== -1) return -1;
+    if (iB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  // Calculate total metrics for each service over the multi-month period
+  const serviceMultiMonthStats = sortedOverviewServices.map((svc, idx) => {
+    let totalData = 0;
+    let totalCp = 0;
+    monthlyServiceTrends.forEach((row) => {
+      totalData += row[`data_${svc}`] || 0;
+      totalCp += row[`cp_${svc}`] || 0;
+    });
+    const color = getOverviewServiceColor(svc, idx);
+    const cpPerData = totalData > 0 ? totalCp / totalData : 0;
+    return {
+      name: svc,
+      totalData,
+      totalCp,
+      cpPerData,
+      color,
+    };
+  });
+
+  const grandTotalSvcData = serviceMultiMonthStats.reduce((sum, s) => sum + s.totalData, 0);
+
+  const MonthlyServiceTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const dataObj = payload[0].payload;
+      const isDataMode = monthlyServiceMetric === 'data';
+      return (
+        <div className="bg-slate-900/95 border border-slate-700 p-3.5 rounded-xl shadow-2xl text-xs space-y-2 z-50 min-w-[240px] backdrop-blur-md">
+          <p className="font-bold text-white text-sm border-b border-slate-800 pb-1.5 flex items-center justify-between">
+            <span>{label}</span>
+            <span className="text-purple-400 font-semibold">
+              {isDataMode ? 'Tổng Data' : 'Tổng Chi Phí'}
+            </span>
+          </p>
+          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            {sortedOverviewServices.map((svc, i) => {
+              const val = isDataMode ? dataObj[`data_${svc}`] || 0 : dataObj[`cp_${svc}`] || 0;
+              const color = getOverviewServiceColor(svc, i);
+              const totalVal = isDataMode ? dataObj.totalMonthData : dataObj.totalMonthCp;
+              const pct = totalVal > 0 ? (val / totalVal) * 100 : 0;
+              return (
+                <div key={svc} className="flex items-center justify-between text-slate-300">
+                  <span className="flex items-center gap-1.5 font-medium" style={{ color }}>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                    {svc}:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">
+                      {isDataMode ? `${val.toLocaleString('vi-VN')} data` : formatVND(val, displayUnit)}
+                    </span>
+                    <span className="text-[10px] text-slate-400">({formatPercent(pct)})</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-t border-slate-800 pt-1.5 flex justify-between items-center text-xs font-bold">
+            <span className="text-slate-400">Tổng Tháng:</span>
+            <span className={isDataMode ? 'text-cyan-300' : 'text-amber-300'}>
+              {isDataMode
+                ? `${dataObj.totalMonthData.toLocaleString('vi-VN')} data`
+                : formatVND(dataObj.totalMonthCp, displayUnit)}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -222,7 +378,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-1.5 z-50 min-w-[210px]">
           <p className="font-bold text-white text-sm border-b border-slate-800 pb-1 flex items-center justify-between">
             <span>{label}</span>
-            <span className="text-emerald-400 font-semibold">Tổng 6 Tháng</span>
+            <span className="text-emerald-400 font-semibold">Tổng Cộng</span>
           </p>
           <div className="flex justify-between items-center text-slate-300 pt-1">
             <span className="text-emerald-400 font-medium">Doanh Thu:</span>
@@ -260,7 +416,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: data.color }} />
               {data.name}
             </span>
-            <span className="text-cyan-400 font-semibold">6 Tháng</span>
+            <span className="text-cyan-400 font-semibold">Tổng Cộng</span>
           </p>
           <div className="flex justify-between items-center text-slate-300 pt-1">
             <span className="text-cyan-400 font-medium">Tổng Data:</span>
@@ -269,7 +425,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-center text-slate-400">
-            <span>Tỷ trọng 6 tháng:</span>
+            <span>Tỷ trọng:</span>
             <span className="font-semibold text-slate-200">
               {formatPercent(data.sharePercent)}
             </span>
@@ -277,7 +433,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
           {data.totalCp > 0 && (
             <div className="border-t border-slate-800/80 pt-1 space-y-1">
               <div className="flex justify-between items-center text-slate-300">
-                <span>CP Dịch Vụ 6T:</span>
+                <span>CP Dịch Vụ:</span>
                 <span className="font-semibold text-amber-300">
                   {formatVND(data.totalCp, displayUnit)}
                 </span>
@@ -308,7 +464,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             {formatVND(grandRevenue, displayUnit)}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Đã trừ DT Việt Kiều • TB: {formatVND(grandRevenue / (monthlyData.length || 1), displayUnit)} / tháng
+            Đã trừ DT Việt Kiều • TB: {formatVND(grandRevenue / activeMonthsCount, displayUnit)} / tháng
           </p>
         </div>
 
@@ -320,7 +476,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             {formatVND(grandCostVAT, displayUnit)}
           </p>
           <p className="text-xs text-slate-400 mt-1">
-            Trung bình: {formatVND(grandCostVAT / (monthlyData.length || 1), displayUnit)} / tháng
+            Trung bình: {formatVND(grandCostVAT / activeMonthsCount, displayUnit)} / tháng
           </p>
         </div>
 
@@ -343,7 +499,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             </div>
           </div>
           <p className="text-xs text-slate-400 mt-2">
-            Tỷ lệ CL: <strong className="text-emerald-300">{formatPercent(grandTotalData > 0 ? (grandQualityData / grandTotalData) * 100 : 0)}</strong> • TB: {Math.round(grandTotalData / (monthlyData.length || 1)).toLocaleString('vi-VN')} Data DV / tháng
+            Tỷ lệ CL: <strong className="text-emerald-300">{formatPercent(grandTotalData > 0 ? (grandQualityData / grandTotalData) * 100 : 0)}</strong> • TB: {Math.round(grandTotalData / activeMonthsCount).toLocaleString('vi-VN')} Data DV / tháng
           </p>
         </div>
 
@@ -369,7 +525,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Đạt KPI: <strong className="text-emerald-400">{metKpiCount}/{monthlyData.length} tháng</strong> (mục tiêu ≤ 15.0%)
+            Đạt KPI: <strong className="text-emerald-400">{metKpiCount}/{activeMonthsCount} tháng</strong> (mục tiêu ≤ 15.0%)
           </p>
         </div>
       </div>
@@ -445,6 +601,248 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
         </div>
       </div>
 
+      {/* Dedicated Multi-Month Service Overview Chart */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <Layers className="w-5 h-5 text-purple-400" />
+              <span>Biểu Đồ Tổng Hợp Các Dịch Vụ Qua Các Tháng</span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-0.5">
+              So sánh Data & Chi phí Marketing của từng dịch vụ (Implant, Niềng, Sứ, TH, Việt Kiều) theo từng tháng
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Chart Type Toggle */}
+            <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+              <button
+                onClick={() => setMonthlyServiceChartType('line')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                  monthlyServiceChartType === 'line'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Dây Dịch Vụ"
+              >
+                <LineIcon className="w-3.5 h-3.5" />
+                <span>Dây Dịch Vụ</span>
+              </button>
+              <button
+                onClick={() => setMonthlyServiceChartType('bar')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                  monthlyServiceChartType === 'bar'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Cột Chồng"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>Cột Chồng</span>
+              </button>
+              <button
+                onClick={() => setMonthlyServiceChartType('area')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                  monthlyServiceChartType === 'area'
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Miền Chồng"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>Miền Chồng</span>
+              </button>
+            </div>
+
+            {/* Metric Toggle */}
+            <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+              <button
+                onClick={() => setMonthlyServiceMetric('data')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  monthlyServiceMetric === 'data'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Data Dịch Vụ
+              </button>
+              <button
+                onClick={() => setMonthlyServiceMetric('cp')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  monthlyServiceMetric === 'cp'
+                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Chi Phí (CP)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Chart Render */}
+        <div className="h-[360px] w-full pt-2">
+          <ResponsiveContainer width="100%" height="100%">
+            {monthlyServiceChartType === 'line' ? (
+              <LineChart data={monthlyServiceTrends} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={12} tickLine={false} />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  width={monthlyServiceMetric === 'cp' ? 65 : 45}
+                  tickFormatter={(v) => {
+                    if (monthlyServiceMetric === 'cp') {
+                      return formatChartAxisVND(v);
+                    }
+                    return v.toLocaleString('vi-VN');
+                  }}
+                />
+                <Tooltip content={<MonthlyServiceTooltip />} />
+                <Legend
+                  verticalAlign="top"
+                  align="center"
+                  height={36}
+                  wrapperStyle={{ fontSize: '12px', color: '#cbd5e1', paddingBottom: '10px' }}
+                />
+                {sortedOverviewServices.map((svc, idx) => {
+                  const color = getOverviewServiceColor(svc, idx);
+                  const dataKey = monthlyServiceMetric === 'data' ? `data_${svc}` : `cp_${svc}`;
+                  return (
+                    <Line
+                      key={svc}
+                      type="monotone"
+                      dataKey={dataKey}
+                      name={svc}
+                      stroke={color}
+                      strokeWidth={3}
+                      dot={{ r: 3.5, fill: color }}
+                      activeDot={{ r: 6 }}
+                    />
+                  );
+                })}
+              </LineChart>
+            ) : monthlyServiceChartType === 'area' ? (
+              <AreaChart data={monthlyServiceTrends} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={12} tickLine={false} />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  width={monthlyServiceMetric === 'cp' ? 65 : 45}
+                  tickFormatter={(v) => {
+                    if (monthlyServiceMetric === 'cp') {
+                      return formatChartAxisVND(v);
+                    }
+                    return v.toLocaleString('vi-VN');
+                  }}
+                />
+                <Tooltip content={<MonthlyServiceTooltip />} />
+                <Legend
+                  verticalAlign="top"
+                  align="center"
+                  height={36}
+                  wrapperStyle={{ fontSize: '12px', color: '#cbd5e1', paddingBottom: '10px' }}
+                />
+                {sortedOverviewServices.map((svc, idx) => {
+                  const color = getOverviewServiceColor(svc, idx);
+                  const dataKey = monthlyServiceMetric === 'data' ? `data_${svc}` : `cp_${svc}`;
+                  return (
+                    <Area
+                      key={svc}
+                      type="monotone"
+                      stackId="1"
+                      dataKey={dataKey}
+                      name={svc}
+                      stroke={color}
+                      fill={color}
+                      fillOpacity={0.45}
+                    />
+                  );
+                })}
+              </AreaChart>
+            ) : (
+              <BarChart data={monthlyServiceTrends} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="monthLabel" stroke="#cbd5e1" fontSize={12} tickLine={false} />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  width={monthlyServiceMetric === 'cp' ? 65 : 45}
+                  tickFormatter={(v) => {
+                    if (monthlyServiceMetric === 'cp') {
+                      return formatChartAxisVND(v);
+                    }
+                    return v.toLocaleString('vi-VN');
+                  }}
+                />
+                <Tooltip content={<MonthlyServiceTooltip />} />
+                <Legend
+                  verticalAlign="top"
+                  align="center"
+                  height={36}
+                  wrapperStyle={{ fontSize: '12px', color: '#cbd5e1', paddingBottom: '10px' }}
+                />
+                {sortedOverviewServices.map((svc, idx) => {
+                  const color = getOverviewServiceColor(svc, idx);
+                  const dataKey = monthlyServiceMetric === 'data' ? `data_${svc}` : `cp_${svc}`;
+                  return (
+                    <Bar
+                      key={svc}
+                      stackId="1"
+                      dataKey={dataKey}
+                      name={svc}
+                      fill={color}
+                      radius={idx === sortedOverviewServices.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                    />
+                  );
+                })}
+              </BarChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+
+        {/* Summary Service Metric Cards for the whole period */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-2">
+          {serviceMultiMonthStats.map((s) => {
+            const pct = grandTotalSvcData > 0 ? (s.totalData / grandTotalSvcData) * 100 : 0;
+            return (
+              <div
+                key={s.name}
+                className="bg-slate-800/60 border border-slate-700/70 hover:border-slate-600 rounded-xl p-3 space-y-1.5 transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-white">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
+                    {s.name}
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded">
+                    {formatPercent(pct)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-base font-bold text-cyan-400">
+                    {s.totalData.toLocaleString('vi-VN')}{' '}
+                    <span className="text-[11px] font-normal text-slate-400">data</span>
+                  </p>
+                  {s.totalCp > 0 && (
+                    <div className="text-[11px] space-y-0.5 mt-1 border-t border-slate-700/50 pt-1">
+                      <p className="text-amber-400 font-medium">
+                        CP: {formatVND(s.totalCp, displayUnit)}
+                      </p>
+                      <p className="text-emerald-400 font-medium">
+                        TB: {formatVND(s.cpPerData, displayUnit)}/data
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Grid: 1) Biểu Đồ Data Dịch Vụ & Data CL 6 Tháng & 2) Biểu Đồ Data Tổng Hợp Từng Dịch Vụ 6 Tháng */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart 1: Biểu Đồ Data Dịch Vụ & Data CL 6 Tháng (Theo Tháng / Khu Vực) */}
@@ -453,7 +851,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Users className="w-5 h-5 text-cyan-400" />
-                <span>Biểu Đồ Data Dịch Vụ & Data CL (6 Tháng)</span>
+                <span>Biểu Đồ Data Dịch Vụ & Data CL</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 {grandTotalData.toLocaleString('vi-VN')} Data Dịch Vụ • {grandQualityData.toLocaleString('vi-VN')} Data Chất Lượng
@@ -553,8 +951,8 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
                     }}
                   />
                   <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '10px' }} />
-                  <Bar dataKey="dataDichVu" name="Data Dịch Vụ 6T" fill="#0891b2" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="dataChatLuong" name="Data CL 6T" fill="#10b981" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="dataDichVu" name="Data Dịch Vụ" fill="#0891b2" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="dataChatLuong" name="Data CL" fill="#10b981" radius={[0, 4, 4, 0]} />
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -567,7 +965,7 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             <div>
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Layers className="w-5 h-5 text-purple-400" />
-                <span>Data Tổng Hợp Theo Từng Dịch Vụ (6 Tháng)</span>
+                <span>Data Tổng Hợp Theo Từng Dịch Vụ</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
                 Phân bổ {totalServiceData6Months.toLocaleString('vi-VN')} Data dịch vụ toàn hệ thống
@@ -731,10 +1129,14 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
                     {formatVND(m.profit, displayUnit)}
                   </td>
                   <td className="py-3 px-4 text-center font-semibold text-purple-300">
-                    {formatPercent(m.ratio)}
+                    {m.hasData ? formatPercent(m.ratio) : '-'}
                   </td>
                   <td className="py-3 px-4 text-center">
-                    {m.isKpiMet ? (
+                    {!m.hasData ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                        Chưa có số liệu
+                      </span>
+                    ) : m.isKpiMet ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Đạt KPI

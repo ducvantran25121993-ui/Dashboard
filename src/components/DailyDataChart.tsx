@@ -11,8 +11,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts';
-import { Activity } from 'lucide-react';
+import { Activity, DollarSign, Target, TrendingUp, Users, Layers, BarChart3, LineChart as LineIcon } from 'lucide-react';
 import { DailyRecord } from '../services/googleSheetsService';
 import { RegionData } from '../data/revenueData';
 import { formatVND } from '../utils/formatters';
@@ -22,6 +23,20 @@ interface DailyDataChartProps {
   activeMonth: number;
   monthLabel: string;
   regions?: RegionData[];
+}
+
+const SERVICE_COLORS: Record<string, string> = {
+  'Implant': '#38bdf8',   // Sky / Cyan
+  'Niềng': '#a855f7',     // Purple
+  'Sứ': '#f59e0b',        // Amber
+  'TH': '#10b981',        // Emerald
+  'Việt Kiều': '#ec4899', // Pink
+};
+
+function getServiceColor(svcName: string, index: number = 0): string {
+  if (SERVICE_COLORS[svcName]) return SERVICE_COLORS[svcName];
+  const palette = ['#6366f1', '#8b5cf6', '#06b6d4', '#f43f5e', '#84cc16'];
+  return palette[index % palette.length];
 }
 
 function normalizeSvcName(raw: string): string {
@@ -46,10 +61,11 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
   const [selectedService, setSelectedService] = useState<string>('all');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [metric, setMetric] = useState<'leadTho' | 'leadChatLuong' | 'budgetVnd'>('leadTho');
-  const [chartType] = useState<'area' | 'line' | 'bar'>('area');
+  const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('line');
 
-  // Compute targets from monthly sheet (regions)
+  // Compute targets & costs from monthly sheet (regions)
   const targetServiceTotals: Record<string, number> = {};
+  const targetServiceCosts: Record<string, number> = {};
   let targetLeadCL = 0;
 
   regions.forEach((r) => {
@@ -57,6 +73,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
     r.services.forEach((s) => {
       const norm = normalizeSvcName(s.name);
       targetServiceTotals[norm] = (targetServiceTotals[norm] || 0) + (s.dataCount || 0);
+      targetServiceCosts[norm] = (targetServiceCosts[norm] || 0) + (s.cp || 0);
     });
   });
 
@@ -75,21 +92,22 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
   const monthRecords = dailyRecords.filter((r) => r.monthNum === activeMonth);
 
   // Build daily data map for the month
-  const dayMap: Record<
-    number,
-    {
-      day: number;
-      dateStr: string;
-      leadTho: number;
-      leadChatLuong: number;
-      budgetVnd: number;
-      services: Record<string, number>;
-      regions: Record<string, { leadTho: number; leadChatLuong: number }>;
-    }
-  > = {};
+  interface DayData {
+    day: number;
+    dateStr: string;
+    leadTho: number;
+    leadChatLuong: number;
+    budgetVnd: number;
+    serviceLeads: Record<string, number>;
+    serviceQuality: Record<string, number>;
+    serviceBudgets: Record<string, number>;
+    regionData: Record<string, { leadTho: number; leadChatLuong: number; budgetVnd: number }>;
+  }
+
+  const dayMap: Record<number, DayData> = {};
 
   if (monthRecords.length > 0) {
-    // Process existing daily records
+    // Process existing daily records from sheet
     monthRecords.forEach((r) => {
       const normSvc = normalizeSvcName(r.service);
       if (!dayMap[r.dayNum]) {
@@ -99,51 +117,29 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
           leadTho: 0,
           leadChatLuong: 0,
           budgetVnd: 0,
-          services: {},
-          regions: {},
+          serviceLeads: {},
+          serviceQuality: {},
+          serviceBudgets: {},
+          regionData: {},
         };
       }
       dayMap[r.dayNum].leadTho += r.leadTho || 0;
       dayMap[r.dayNum].leadChatLuong += r.leadChatLuong || 0;
       dayMap[r.dayNum].budgetVnd += r.budgetVnd || 0;
 
-      dayMap[r.dayNum].services[normSvc] = (dayMap[r.dayNum].services[normSvc] || 0) + (r.leadTho || 0);
+      dayMap[r.dayNum].serviceLeads[normSvc] = (dayMap[r.dayNum].serviceLeads[normSvc] || 0) + (r.leadTho || 0);
+      dayMap[r.dayNum].serviceQuality[normSvc] = (dayMap[r.dayNum].serviceQuality[normSvc] || 0) + (r.leadChatLuong || 0);
+      dayMap[r.dayNum].serviceBudgets[normSvc] = (dayMap[r.dayNum].serviceBudgets[normSvc] || 0) + (r.budgetVnd || 0);
 
-      if (!dayMap[r.dayNum].regions[r.region]) {
-        dayMap[r.dayNum].regions[r.region] = { leadTho: 0, leadChatLuong: 0 };
+      if (!dayMap[r.dayNum].regionData[r.region]) {
+        dayMap[r.dayNum].regionData[r.region] = { leadTho: 0, leadChatLuong: 0, budgetVnd: 0 };
       }
-      dayMap[r.dayNum].regions[r.region].leadTho += r.leadTho || 0;
-      dayMap[r.dayNum].regions[r.region].leadChatLuong += r.leadChatLuong || 0;
+      dayMap[r.dayNum].regionData[r.region].leadTho += r.leadTho || 0;
+      dayMap[r.dayNum].regionData[r.region].leadChatLuong += r.leadChatLuong || 0;
+      dayMap[r.dayNum].regionData[r.region].budgetVnd += r.budgetVnd || 0;
     });
-
-    // If targetLeadTho from monthly sheet is available, calibrate total leads to match monthly sheet exactly
-    const currentSumTho = Object.values(dayMap).reduce((s, d) => s + d.leadTho, 0);
-    const currentSumCL = Object.values(dayMap).reduce((s, d) => s + d.leadChatLuong, 0);
-
-    if (targetLeadTho > 0 && currentSumTho > 0 && Math.abs(currentSumTho - targetLeadTho) > 0) {
-      const scaleTho = targetLeadTho / currentSumTho;
-      const scaleCL = targetLeadCL > 0 && currentSumCL > 0 ? targetLeadCL / currentSumCL : scaleTho;
-
-      let remTho = targetLeadTho;
-      let remCL = targetLeadCL;
-      const days = Object.keys(dayMap).map(Number).sort((a, b) => a - b);
-
-      days.forEach((d, idx) => {
-        if (idx === days.length - 1) {
-          dayMap[d].leadTho = remTho;
-          if (targetLeadCL > 0) dayMap[d].leadChatLuong = remCL;
-        } else {
-          const newTho = Math.round(dayMap[d].leadTho * scaleTho);
-          const newCL = Math.round(dayMap[d].leadChatLuong * scaleCL);
-          dayMap[d].leadTho = newTho;
-          dayMap[d].leadChatLuong = newCL;
-          remTho -= newTho;
-          remCL -= newCL;
-        }
-      });
-    }
   } else {
-    // Generate synthetic daily breakdown matching exact monthly sheet totals
+    // Generate synthetic daily breakdown matching exact monthly sheet totals & service costs
     const weights: number[] = [];
     let totalWeight = 0;
     for (let d = 1; d <= daysInMonth; d++) {
@@ -152,7 +148,6 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
       totalWeight += w;
     }
 
-    // Initialize day map
     for (let d = 1; d <= daysInMonth; d++) {
       dayMap[d] = {
         day: d,
@@ -160,28 +155,42 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
         leadTho: 0,
         leadChatLuong: 0,
         budgetVnd: 0,
-        services: {},
-        regions: {},
+        serviceLeads: {},
+        serviceQuality: {},
+        serviceBudgets: {},
+        regionData: {},
       };
     }
 
-    // Distribute each service total across days
+    // Distribute service leads and service costs across days
     Object.entries(targetServiceTotals).forEach(([svc, svcTotal]) => {
-      let rem = svcTotal;
+      const svcCost = targetServiceCosts[svc] || 0;
+      let remLeads = svcTotal;
+      let remCost = svcCost;
+
       for (let d = 1; d <= daysInMonth; d++) {
         if (d === daysInMonth) {
-          dayMap[d].services[svc] = rem;
-          dayMap[d].leadTho += rem;
+          dayMap[d].serviceLeads[svc] = remLeads;
+          dayMap[d].serviceBudgets[svc] = remCost;
+          dayMap[d].leadTho += remLeads;
+          dayMap[d].budgetVnd += remCost;
         } else {
-          const val = Math.min(rem, Math.round((weights[d - 1] / totalWeight) * svcTotal));
-          dayMap[d].services[svc] = val;
-          dayMap[d].leadTho += val;
-          rem -= val;
+          const leadVal = Math.min(remLeads, Math.round((weights[d - 1] / totalWeight) * svcTotal));
+          const costVal = Math.min(remCost, Math.round((weights[d - 1] / totalWeight) * svcCost));
+          dayMap[d].serviceLeads[svc] = leadVal;
+          dayMap[d].serviceBudgets[svc] = costVal;
+          dayMap[d].leadTho += leadVal;
+          dayMap[d].budgetVnd += costVal;
+          remLeads -= leadVal;
+          remCost -= costVal;
         }
+
+        const qVal = Math.round((dayMap[d].serviceLeads[svc] || 0) * (targetLeadCL > 0 && targetLeadTho > 0 ? targetLeadCL / targetLeadTho : 0.85));
+        dayMap[d].serviceQuality[svc] = qVal;
       }
     });
 
-    // Distribute Quality Leads across days
+    // Distribute Quality Leads total
     let remCL = targetLeadCL;
     for (let d = 1; d <= daysInMonth; d++) {
       if (d === daysInMonth) {
@@ -195,61 +204,100 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
     }
   }
 
+  // Aggregate monthly summary stats per service across all active days
+  const allDaysList = Object.values(dayMap);
+  const serviceSummaryList = uniqueServices.map((svc) => {
+    let svcTho = 0;
+    let svcCL = 0;
+    let svcCost = 0;
+
+    allDaysList.forEach((d) => {
+      svcTho += d.serviceLeads[svc] || 0;
+      svcCL += d.serviceQuality[svc] || 0;
+      svcCost += d.serviceBudgets[svc] || 0;
+    });
+
+    const cplTho = svcTho > 0 ? Math.round(svcCost / svcTho) : 0;
+    const cplCL = svcCL > 0 ? Math.round(svcCost / svcCL) : 0;
+
+    return {
+      name: svc,
+      leadTho: svcTho,
+      leadCL: svcCL,
+      costVnd: svcCost,
+      cplTho,
+      cplCL,
+    };
+  });
+
+  const grandTotalCost = serviceSummaryList.reduce((s, x) => s + x.costVnd, 0);
+
   // Filter daily data based on selectedService and selectedRegion
   const chartData = Object.values(dayMap)
     .sort((a, b) => a.day - b.day)
     .map((d) => {
       let displayTho = d.leadTho;
       let displayCL = d.leadChatLuong;
+      let displayBudget = d.budgetVnd;
 
       if (selectedService !== 'all') {
-        displayTho = d.services[selectedService] || 0;
-        const svcRatio = targetServiceTotals[selectedService] && targetLeadTho > 0 ? targetServiceTotals[selectedService] / targetLeadTho : 0.2;
-        displayCL = Math.round(displayTho * (targetLeadCL > 0 && targetLeadTho > 0 ? targetLeadCL / targetLeadTho : 0.85));
+        displayTho = d.serviceLeads[selectedService] || 0;
+        displayCL = d.serviceQuality[selectedService] || 0;
+        displayBudget = d.serviceBudgets[selectedService] || 0;
       }
 
-      if (selectedRegion !== 'all' && d.regions[selectedRegion]) {
-        displayTho = d.regions[selectedRegion].leadTho;
-        displayCL = d.regions[selectedRegion].leadChatLuong;
+      if (selectedRegion !== 'all' && d.regionData[selectedRegion]) {
+        displayTho = d.regionData[selectedRegion].leadTho;
+        displayCL = d.regionData[selectedRegion].leadChatLuong;
+        displayBudget = d.regionData[selectedRegion].budgetVnd;
       }
 
-      return {
+      const dayObj: any = {
         ...d,
         leadTho: displayTho,
         leadChatLuong: displayCL,
+        budgetVnd: displayBudget,
       };
+
+      uniqueServices.forEach((svc) => {
+        dayObj[`svc_lead_${svc}`] = d.serviceLeads[svc] || 0;
+        dayObj[`svc_quality_${svc}`] = d.serviceQuality[svc] || 0;
+        dayObj[`svc_budget_${svc}`] = d.serviceBudgets[svc] || 0;
+      });
+
+      return dayObj;
     });
 
   // Calculate totals for KPIs
   const totalLeadsTho = chartData.reduce((sum, d) => sum + d.leadTho, 0);
   const totalLeadsChatLuong = chartData.reduce((sum, d) => sum + d.leadChatLuong, 0);
+  const totalBudgetVnd = chartData.reduce((sum, d) => sum + d.budgetVnd, 0);
   const avgLeadsPerDay = chartData.length > 0 ? Math.round(totalLeadsTho / chartData.length) : 0;
+  const avgCplTho = totalLeadsTho > 0 ? Math.round(totalBudgetVnd / totalLeadsTho) : 0;
+  const avgCplCL = totalLeadsChatLuong > 0 ? Math.round(totalBudgetVnd / totalLeadsChatLuong) : 0;
   const peakDayObj = [...chartData].sort((a, b) => b.leadTho - a.leadTho)[0];
 
   const getMetricLabel = () => {
     if (metric === 'leadTho') return 'Lead Thô (Data Ngày)';
     if (metric === 'leadChatLuong') return 'Lead Chất Lượng';
-    return 'Ngân Sách (VNĐ)';
-  };
-
-  const getMetricColor = () => {
-    if (metric === 'leadTho') return '#06b6d4';
-    if (metric === 'leadChatLuong') return '#10b981';
-    return '#f59e0b';
+    return 'Chi Phí / Ngân Sách (VNĐ)';
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+      const cplDay = data.leadTho > 0 ? Math.round(data.budgetVnd / data.leadTho) : 0;
       return (
-        <div className="bg-slate-900 border border-slate-700 p-3.5 rounded-xl shadow-xl text-xs space-y-1.5 z-50 min-w-[210px]">
-          <p className="font-bold text-white text-sm border-b border-slate-800 pb-1 flex items-center justify-between">
+        <div className="bg-slate-900/95 border border-slate-700 p-3.5 rounded-xl shadow-2xl text-xs space-y-2 z-50 min-w-[260px] max-w-[320px] backdrop-blur-md">
+          <p className="font-bold text-white text-sm border-b border-slate-800 pb-1.5 flex items-center justify-between">
             <span>Ngày {data.dateStr}</span>
-            <span className="text-cyan-400 font-semibold">{monthLabel}</span>
+            <span className="text-cyan-400 font-semibold">
+              {selectedService !== 'all' ? selectedService : `${monthLabel}`}
+            </span>
           </p>
-          <div className="flex justify-between items-center text-slate-300 pt-1">
-            <span className="text-cyan-400 font-medium">Data / Lead Thô:</span>
-            <span className="font-bold text-cyan-300 text-sm">
+          <div className="flex justify-between items-center text-slate-300">
+            <span className="text-cyan-400 font-medium">Tổng Lead Thô:</span>
+            <span className="font-bold text-cyan-300">
               {data.leadTho.toLocaleString('vi-VN')} data
             </span>
           </div>
@@ -259,14 +307,48 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
               {data.leadChatLuong.toLocaleString('vi-VN')}
             </span>
           </div>
-          {data.budgetVnd > 0 && (
-            <div className="flex justify-between items-center text-slate-300 border-t border-slate-800/80 pt-1">
-              <span className="text-amber-400 font-medium">Ngân Sách Ngày:</span>
-              <span className="font-bold text-amber-300">
-                {formatVND(data.budgetVnd)}
+          <div className="flex justify-between items-center text-slate-300 border-t border-slate-800/80 pt-1">
+            <span className="text-amber-400 font-medium">Chi Phí (Ngân Sách):</span>
+            <span className="font-bold text-amber-300">
+              {formatVND(data.budgetVnd)}
+            </span>
+          </div>
+          {cplDay > 0 && (
+            <div className="flex justify-between items-center text-slate-400 text-[11px]">
+              <span>CPL Trung Bình:</span>
+              <span className="font-semibold text-slate-200">
+                {formatVND(cplDay)} / data
               </span>
             </div>
           )}
+
+          {/* Breakdown per service for this day */}
+          <div className="border-t border-slate-800 pt-2 mt-1 space-y-1">
+            <p className="text-[11px] font-bold text-slate-400 flex items-center justify-between">
+              <span>Chi tiết dịch vụ ngày {data.dateStr}:</span>
+              <span className="text-[10px] text-slate-500 font-normal">(Data • Chi phí)</span>
+            </p>
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+              {uniqueServices.map((svc, i) => {
+                const sTho = data.serviceLeads?.[svc] || 0;
+                const sCost = data.serviceBudgets?.[svc] || 0;
+                if (sTho === 0 && sCost === 0) return null;
+                const sColor = getServiceColor(svc, i);
+                return (
+                  <div key={svc} className="flex items-center justify-between text-[11px]">
+                    <span className="flex items-center gap-1.5 font-medium" style={{ color: sColor }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sColor }} />
+                      {svc}:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-cyan-300 font-medium">{sTho} data</span>
+                      <span className="text-amber-300 font-medium">{formatVND(sCost)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       );
     }
@@ -282,10 +364,10 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
             <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
               <Activity className="w-4 h-4" />
             </div>
-            <span>Data Ngày Theo Từng Dịch Vụ ({monthLabel})</span>
+            <span>Data Ngày & Chi Phí Theo Dịch Vụ ({monthLabel})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Chi tiết biến động Data ngày từ sheet <strong className="text-teal-400">Data Ngày</strong> &amp; <strong className="text-emerald-400">Doanh Thu Theo Tháng</strong> • {chartData.length} ngày trong tháng
+            Chi tiết biến động Data ngày &amp; Chi phí Marketing từng Dịch vụ từ sheet <strong className="text-teal-400">Data Ngày</strong> • {chartData.length} ngày trong tháng
           </p>
         </div>
 
@@ -327,6 +409,46 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
             </div>
           )}
 
+          {/* Chart Type Toggle */}
+          <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
+            <button
+              onClick={() => setChartType('line')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                chartType === 'line'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Dây biểu đồ từng dịch vụ"
+            >
+              <LineIcon className="w-3.5 h-3.5" />
+              <span>Dây Dịch Vụ</span>
+            </button>
+            <button
+              onClick={() => setChartType('area')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                chartType === 'area'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Biểu đồ Miền"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Miền</span>
+            </button>
+            <button
+              onClick={() => setChartType('bar')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+                chartType === 'bar'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+              title="Biểu đồ Cột"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Cột</span>
+            </button>
+          </div>
+
           {/* Metric Selector */}
           <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
             <button
@@ -357,7 +479,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Ngân Sách
+              Chi Phí / Ngân Sách
             </button>
           </div>
         </div>
@@ -393,30 +515,65 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
         </div>
       )}
 
-      {/* KPI Cards for Daily Data */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* KPI Cards for Daily Data & Budget */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
-          <span className="text-[11px] text-slate-400 font-medium uppercase">Tổng Lead Thô (Data)</span>
-          <p className="text-xl font-bold text-cyan-400 mt-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-medium uppercase">Total Lead Thô</span>
+            <Users className="w-3.5 h-3.5 text-cyan-400" />
+          </div>
+          <p className="text-lg font-bold text-cyan-400 mt-1">
             {totalLeadsTho.toLocaleString('vi-VN')}
           </p>
         </div>
+
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
-          <span className="text-[11px] text-slate-400 font-medium uppercase">Lead Chất Lượng</span>
-          <p className="text-xl font-bold text-emerald-400 mt-1">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-medium uppercase">Lead Chất Lượng</span>
+            <Target className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <p className="text-lg font-bold text-emerald-400 mt-1">
             {totalLeadsChatLuong.toLocaleString('vi-VN')}
           </p>
         </div>
+
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
-          <span className="text-[11px] text-slate-400 font-medium uppercase">TB Data / Ngày</span>
-          <p className="text-xl font-bold text-blue-400 mt-1">
-            {avgLeadsPerDay.toLocaleString('vi-VN')} data/ngày
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-medium uppercase">Tổng Chi Phí</span>
+            <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+          </div>
+          <p className="text-lg font-bold text-amber-400 mt-1">
+            {formatVND(totalBudgetVnd)}
           </p>
         </div>
+
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
-          <span className="text-[11px] text-slate-400 font-medium uppercase">Peak Cao Nhất</span>
-          <p className="text-xl font-bold text-amber-400 mt-1">
-            {peakDayObj ? `${peakDayObj.leadTho} data (Ngày ${peakDayObj.day})` : '0'}
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-medium uppercase">CPL Thô</span>
+            <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
+          </div>
+          <p className="text-lg font-bold text-blue-400 mt-1">
+            {avgCplTho > 0 ? `${formatVND(avgCplTho)}` : '0 đ'}
+          </p>
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-medium uppercase">CPL Chất Lượng</span>
+            <TrendingUp className="w-3.5 h-3.5 text-teal-400" />
+          </div>
+          <p className="text-lg font-bold text-teal-400 mt-1">
+            {avgCplCL > 0 ? `${formatVND(avgCplCL)}` : '0 đ'}
+          </p>
+        </div>
+
+        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[11px] font-medium uppercase">Peak Cao Nhất</span>
+            <Activity className="w-3.5 h-3.5 text-purple-400" />
+          </div>
+          <p className="text-lg font-bold text-purple-300 mt-1">
+            {peakDayObj ? `${peakDayObj.leadTho} data` : '0'}
           </p>
         </div>
       </div>
@@ -427,53 +584,20 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
           Chưa có dữ liệu Data Ngày cho {monthLabel} (hoặc bộ lọc được chọn không có kết quả).
         </div>
       ) : (
-        <div className="h-[360px] w-full">
+        <div className="h-[380px] w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'area' ? (
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                <defs>
-                  <linearGradient id="metricGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={getMetricColor()} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={getMetricColor()} stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="dateStr" stroke="#cbd5e1" fontSize={11} tickLine={false} />
-                <YAxis
-                  stroke="#94a3b8"
-                  fontSize={11}
-                  width={metric === 'budgetVnd' ? 55 : 40}
-                  tickFormatter={(v) => {
-                    if (metric === 'budgetVnd') {
-                      if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
-                      if (v >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
-                      return v;
-                    }
-                    return v.toLocaleString('vi-VN');
-                  }}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey={metric}
-                  name={getMetricLabel()}
-                  stroke={getMetricColor()}
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#metricGradient)"
-                />
-              </AreaChart>
-            ) : chartType === 'line' ? (
+            {chartType === 'line' ? (
               <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="dateStr" stroke="#cbd5e1" fontSize={11} tickLine={false} />
                 <YAxis
                   stroke="#94a3b8"
                   fontSize={11}
-                  width={metric === 'budgetVnd' ? 55 : 40}
+                  width={metric === 'budgetVnd' ? 65 : 45}
                   tickFormatter={(v) => {
                     if (metric === 'budgetVnd') {
-                      if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+                      if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
+                      if (v >= 1e6) return `${(v / 1e6).toFixed(0)}M`;
                       if (v >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
                       return v;
                     }
@@ -481,15 +605,101 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                   }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey={metric}
-                  name={getMetricLabel()}
-                  stroke={getMetricColor()}
-                  strokeWidth={3}
-                  dot={{ r: 3, fill: getMetricColor() }}
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  wrapperStyle={{ fontSize: '11px', color: '#cbd5e1', paddingBottom: '8px' }}
                 />
+                {selectedService === 'all' ? (
+                  uniqueServices.map((svc, idx) => {
+                    const color = getServiceColor(svc, idx);
+                    const dataKey =
+                      metric === 'leadTho'
+                        ? `svc_lead_${svc}`
+                        : metric === 'leadChatLuong'
+                        ? `svc_quality_${svc}`
+                        : `svc_budget_${svc}`;
+                    return (
+                      <Line
+                        key={svc}
+                        type="monotone"
+                        dataKey={dataKey}
+                        name={`${svc}`}
+                        stroke={color}
+                        strokeWidth={2.5}
+                        dot={{ r: 2.5, fill: color }}
+                        activeDot={{ r: 5 }}
+                      />
+                    );
+                  })
+                ) : (
+                  <Line
+                    type="monotone"
+                    dataKey={metric}
+                    name={selectedService}
+                    stroke={getServiceColor(selectedService)}
+                    strokeWidth={3}
+                    dot={{ r: 3.5, fill: getServiceColor(selectedService) }}
+                  />
+                )}
               </LineChart>
+            ) : chartType === 'area' ? (
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="dateStr" stroke="#cbd5e1" fontSize={11} tickLine={false} />
+                <YAxis
+                  stroke="#94a3b8"
+                  fontSize={11}
+                  width={metric === 'budgetVnd' ? 65 : 45}
+                  tickFormatter={(v) => {
+                    if (metric === 'budgetVnd') {
+                      if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
+                      if (v >= 1e6) return `${(v / 1e6).toFixed(0)}M`;
+                      if (v >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
+                      return v;
+                    }
+                    return v.toLocaleString('vi-VN');
+                  }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  wrapperStyle={{ fontSize: '11px', color: '#cbd5e1' }}
+                />
+                {selectedService === 'all' ? (
+                  uniqueServices.map((svc, idx) => {
+                    const color = getServiceColor(svc, idx);
+                    const dataKey =
+                      metric === 'leadTho'
+                        ? `svc_lead_${svc}`
+                        : metric === 'leadChatLuong'
+                        ? `svc_quality_${svc}`
+                        : `svc_budget_${svc}`;
+                    return (
+                      <Area
+                        key={svc}
+                        type="monotone"
+                        stackId="1"
+                        dataKey={dataKey}
+                        name={svc}
+                        stroke={color}
+                        fill={color}
+                        fillOpacity={0.4}
+                      />
+                    );
+                  })
+                ) : (
+                  <Area
+                    type="monotone"
+                    dataKey={metric}
+                    name={selectedService}
+                    stroke={getServiceColor(selectedService)}
+                    fill={getServiceColor(selectedService)}
+                    fillOpacity={0.4}
+                  />
+                )}
+              </AreaChart>
             ) : (
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
@@ -497,10 +707,11 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                 <YAxis
                   stroke="#94a3b8"
                   fontSize={11}
-                  width={metric === 'budgetVnd' ? 55 : 40}
+                  width={metric === 'budgetVnd' ? 65 : 45}
                   tickFormatter={(v) => {
                     if (metric === 'budgetVnd') {
-                      if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+                      if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
+                      if (v >= 1e6) return `${(v / 1e6).toFixed(0)}M`;
                       if (v >= 1e3) return `${(v / 1e3).toFixed(0)}k`;
                       return v;
                     }
@@ -508,13 +719,109 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                   }}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey={metric} name={getMetricLabel()} fill={getMetricColor()} radius={[4, 4, 0, 0]} />
+                <Legend
+                  verticalAlign="top"
+                  height={36}
+                  wrapperStyle={{ fontSize: '11px', color: '#cbd5e1' }}
+                />
+                {selectedService === 'all' ? (
+                  uniqueServices.map((svc, idx) => {
+                    const color = getServiceColor(svc, idx);
+                    const dataKey =
+                      metric === 'leadTho'
+                        ? `svc_lead_${svc}`
+                        : metric === 'leadChatLuong'
+                        ? `svc_quality_${svc}`
+                        : `svc_budget_${svc}`;
+                    return (
+                      <Bar
+                        key={svc}
+                        stackId="1"
+                        dataKey={dataKey}
+                        name={svc}
+                        fill={color}
+                      />
+                    );
+                  })
+                ) : (
+                  <Bar
+                    dataKey={metric}
+                    name={selectedService}
+                    fill={getServiceColor(selectedService)}
+                    radius={[4, 4, 0, 0]}
+                  />
+                )}
               </BarChart>
             )}
           </ResponsiveContainer>
         </div>
       )}
+
+      {/* Detailed Service Cost & Lead Breakdown Table */}
+      <div className="pt-2 border-t border-slate-800">
+        <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center justify-between">
+          <span>Bảng Tổng Hợp Data &amp; Chi Phí Theo Từng Dịch Vụ ({monthLabel})</span>
+          <span className="text-xs text-amber-400 font-semibold bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg">
+            Tổng Chi Phí: {formatVND(grandTotalCost)}
+          </span>
+        </h3>
+
+        <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full text-left text-xs text-slate-300">
+            <thead className="bg-slate-800/90 text-slate-400 font-semibold uppercase text-[11px] border-b border-slate-700">
+              <tr>
+                <th className="py-2.5 px-3">Dịch Vụ</th>
+                <th className="py-2.5 px-3 text-right">Lead Thô (Data)</th>
+                <th className="py-2.5 px-3 text-right">Lead Chất Lượng</th>
+                <th className="py-2.5 px-3 text-right">Chi Phí (Ngân Sách)</th>
+                <th className="py-2.5 px-3 text-right">CPL Thô</th>
+                <th className="py-2.5 px-3 text-right">CPL CL</th>
+                <th className="py-2.5 px-3 text-right">% Chi Phí</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {serviceSummaryList.map((svc) => {
+                const pctCost = grandTotalCost > 0 ? ((svc.costVnd / grandTotalCost) * 100).toFixed(1) : '0.0';
+                const isSelected = selectedService === svc.name;
+                return (
+                  <tr
+                    key={svc.name}
+                    onClick={() => setSelectedService(selectedService === svc.name ? 'all' : svc.name)}
+                    className={`cursor-pointer transition-colors hover:bg-slate-800/60 ${
+                      isSelected ? 'bg-blue-900/30 font-medium' : ''
+                    }`}
+                  >
+                    <td className="py-2.5 px-3 text-white font-semibold flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-blue-400' : 'bg-slate-600'}`} />
+                      {svc.name}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-cyan-300 font-medium">
+                      {svc.leadTho.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-emerald-300 font-medium">
+                      {svc.leadCL.toLocaleString('vi-VN')}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-amber-300 font-semibold">
+                      {formatVND(svc.costVnd)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-slate-300">
+                      {svc.cplTho > 0 ? `${formatVND(svc.cplTho)}` : '0 đ'}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-teal-300">
+                      {svc.cplCL > 0 ? `${formatVND(svc.cplCL)}` : '0 đ'}
+                    </td>
+                    <td className="py-2.5 px-3 text-right text-slate-400 font-medium">
+                      {pctCost}%
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
+
 

@@ -11,6 +11,7 @@ interface SheetStatusBannerProps {
   onUpdateSheetUrl: (newUrl: string) => void;
   autoRefreshEnabled: boolean;
   onToggleAutoRefresh: () => void;
+  userRole?: 'admin' | 'staff' | null;
 }
 
 export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
@@ -22,6 +23,7 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
   onUpdateSheetUrl,
   autoRefreshEnabled,
   onToggleAutoRefresh,
+  userRole,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [tempUrl, setTempUrl] = useState(sheetUrl);
@@ -64,7 +66,11 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
             </span>
             <span className="text-slate-600">•</span>
             <span className="text-slate-400">
-              Cập nhật tự động mỗi 60 giây
+              Cập nhật tự động 30s/lần
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-amber-400/90 text-[11px]">
+              (Google Sheet mất 1-2 phút xuất CSV sau khi bạn sửa)
             </span>
           </p>
         </div>
@@ -72,29 +78,33 @@ export const SheetStatusBanner: React.FC<SheetStatusBannerProps> = ({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
-        {/* Open Sheet external link */}
-        <a
-          href={sheetUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/80 font-medium flex items-center gap-1.5 transition-all"
-          title="Mở Google Sheet trên tab mới"
-        >
-          <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
-          <span className="hidden md:inline">Mở Sheet</span>
-        </a>
+        {/* Open Sheet external link - Only for Admin */}
+        {userRole !== 'staff' && (
+          <a
+            href={sheetUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/80 font-medium flex items-center gap-1.5 transition-all"
+            title="Mở Google Sheet trên tab mới"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden md:inline">Mở Sheet</span>
+          </a>
+        )}
 
-        {/* Change URL button */}
-        <button
-          onClick={() => {
-            setTempUrl(sheetUrl);
-            setShowModal(true);
-          }}
-          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/80 font-medium flex items-center gap-1.5 transition-all"
-        >
-          <Settings className="w-3.5 h-3.5 text-slate-400" />
-          <span>Cấu hình Sheet</span>
-        </button>
+        {/* Change URL button - Only for Admin */}
+        {userRole !== 'staff' && (
+          <button
+            onClick={() => {
+              setTempUrl(sheetUrl);
+              setShowModal(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/80 font-medium flex items-center gap-1.5 transition-all"
+          >
+            <Settings className="w-3.5 h-3.5 text-slate-400" />
+            <span>Cấu hình Sheet</span>
+          </button>
+        )}
 
         {/* Refresh Now Button */}
         <button

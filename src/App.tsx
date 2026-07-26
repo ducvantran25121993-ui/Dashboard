@@ -13,6 +13,8 @@ import { VietKieuChart } from './components/VietKieuChart';
 import { RegionalDetailTable } from './components/RegionalDetailTable';
 import { SixMonthOverview } from './components/SixMonthOverview';
 import { SheetStatusBanner } from './components/SheetStatusBanner';
+import { LoginModal } from './components/LoginModal';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import {
   fetchGoogleSheetData,
   DEFAULT_SHEET_URL,
@@ -23,11 +25,93 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<MonthTab>(1);
   const [displayUnit, setDisplayUnit] = useState<DisplayUnit>('full');
 
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      return (
+        localStorage.getItem('dashboard_authenticated') === 'true' ||
+        sessionStorage.getItem('dashboard_authenticated') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  const [userRole, setUserRole] = useState<'admin' | 'staff' | null>(() => {
+    try {
+      return (
+        (localStorage.getItem('dashboard_user_role') as 'admin' | 'staff') ||
+        (sessionStorage.getItem('dashboard_user_role') as 'admin' | 'staff') ||
+        'admin'
+      );
+    } catch {
+      return 'admin';
+    }
+  });
+
+  const [adminPassword, setAdminPassword] = useState<string>(() => {
+    try {
+      return localStorage.getItem('dashboard_password') || '123456';
+    } catch {
+      return '123456';
+    }
+  });
+
+  const [staffPassword, setStaffPassword] = useState<string>(() => {
+    try {
+      return localStorage.getItem('dashboard_staff_password') || 'nv123';
+    } catch {
+      return 'nv123';
+    }
+  });
+
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
+
+  const handleLoginSuccess = (role: 'admin' | 'staff') => {
+    setUserRole(role);
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('dashboard_authenticated');
+      localStorage.removeItem('dashboard_user_role');
+      sessionStorage.removeItem('dashboard_authenticated');
+      sessionStorage.removeItem('dashboard_user_role');
+    } catch {
+      // ignore
+    }
+    setUserRole(null);
+    setIsAuthenticated(false);
+  };
+
+  const handleSaveAdminPassword = (newPass: string) => {
+    setAdminPassword(newPass);
+    try {
+      localStorage.setItem('dashboard_password', newPass);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSaveStaffPassword = (newPass: string) => {
+    setStaffPassword(newPass);
+    try {
+      localStorage.setItem('dashboard_staff_password', newPass);
+    } catch {
+      // ignore
+    }
+  };
+
   // Google Sheet live synchronization state
   const [sheetUrl, setSheetUrl] = useState<string>(DEFAULT_SHEET_URL);
   const [monthlyDatasets, setMonthlyDatasets] = useState<MonthDataset[]>(() => {
     try {
-      const cached = localStorage.getItem('monthly_sheet_datasets');
+      localStorage.removeItem('monthly_sheet_datasets');
+      localStorage.removeItem('monthly_sheet_datasets_v2');
+      localStorage.removeItem('monthly_sheet_datasets_v3');
+      localStorage.removeItem('monthly_sheet_datasets_v4');
+      const cached = localStorage.getItem('monthly_sheet_datasets_v5');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -50,7 +134,7 @@ export default function App() {
     if (result.monthlyData && result.monthlyData.length > 0) {
       setMonthlyDatasets(result.monthlyData);
       try {
-        localStorage.setItem('monthly_sheet_datasets', JSON.stringify(result.monthlyData));
+        localStorage.setItem('monthly_sheet_datasets_v5', JSON.stringify(result.monthlyData));
       } catch {
         // ignore storage error
       }
@@ -81,12 +165,39 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white pb-12">
+      {/* Login Authentication Modal Gate */}
+      {!isAuthenticated && (
+        <LoginModal
+          onLoginSuccess={handleLoginSuccess}
+          adminPassword={adminPassword}
+          staffPassword={staffPassword}
+          onResetToDefaultPassword={() => {
+            handleSaveAdminPassword('123456');
+            handleSaveStaffPassword('nv123');
+          }}
+        />
+      )}
+
+      {/* Change Password Modal */}
+      {isChangePasswordOpen && (
+        <ChangePasswordModal
+          adminPassword={adminPassword}
+          staffPassword={staffPassword}
+          onSaveAdminPassword={handleSaveAdminPassword}
+          onSaveStaffPassword={handleSaveStaffPassword}
+          onClose={() => setIsChangePasswordOpen(false)}
+        />
+      )}
+
       {/* Top sticky header & month tabs navigation */}
       <Header
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         displayUnit={displayUnit}
         onSelectUnit={setDisplayUnit}
+        userRole={userRole}
+        onLockDashboard={handleLogout}
+        onChangePassword={() => setIsChangePasswordOpen(true)}
       />
 
       {/* Main Content Container */}
@@ -104,6 +215,7 @@ export default function App() {
           }}
           autoRefreshEnabled={autoRefreshEnabled}
           onToggleAutoRefresh={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+          userRole={userRole}
         />
 
         {activeTab === 'overview' ? (
