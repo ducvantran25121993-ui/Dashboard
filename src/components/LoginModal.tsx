@@ -87,7 +87,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               Yêu Cầu Mật Khẩu
             </h2>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Nhập mật khẩu Quản lý hoặc Nhân viên để truy cập
+              Nhập mật khẩu để truy cập
             </p>
           </div>
         </div>
@@ -234,7 +234,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         <div className="pt-3 border-t border-slate-800/80 text-center">
           <p className="text-xs text-slate-500 flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Phân quyền 2 cấp: Admin & Nhân viên</span>
+            <span>Administrator & User</span>
           </p>
         </div>
       </div>
