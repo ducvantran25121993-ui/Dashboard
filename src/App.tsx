@@ -304,7 +304,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>Báo Cáo Doanh Thu Theo Tháng, Chi Phí (VAT) & Data Dịch Vụ Theo Ngày</p>
           <p className="text-slate-600">
-            Tự động đồng bộ với Google Sheet • Tháng 1 đến Tháng 7
+            Google Advertisements
           </p>
         </div>
       </footer>
