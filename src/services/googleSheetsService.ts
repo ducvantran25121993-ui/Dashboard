@@ -9,6 +9,7 @@ export interface DailyRecord {
   service: string;       // e.g. 'IMP', 'NIỀNG', 'SỨ', 'TQ', 'Việt Kiều'
   totalBudget: number;
   budgetVnd: number;
+  costVat?: number;
   leadTho: number;
   leadChatLuong: number;
   cpl: number;
@@ -223,15 +224,95 @@ function parseDailySheet(csvText: string): DailyRecord[] {
   const rows = parseCSV(csvText);
   if (rows.length < 2) return [];
 
+  // Detect header row and column mapping dynamically
+  let headerRowIndex = -1;
+  let colDate = -1;
+  let colRegion = -1;
+  let colService = -1;
+  let colTotalBudget = -1;
+  let colBudgetVnd = -1;
+  let colCostVat = -1;
+  let colLeadTho = -1;
+  let colLeadCL = -1;
+  let colCpl = -1;
+
+  for (let r = 0; r < Math.min(5, rows.length); r++) {
+    const row = rows[r];
+    if (!row) continue;
+    const rowStr = row.join(' ').toLowerCase();
+
+    if (
+      rowStr.includes('ngày') || rowStr.includes('dịch vụ') || rowStr.includes('lead') ||
+      rowStr.includes('chi phí') || rowStr.includes('miền') || rowStr.includes('khu vực')
+    ) {
+      headerRowIndex = r;
+      row.forEach((cell, idx) => {
+        const c = cell.toLowerCase().trim();
+        if (c.includes('ngày') || c === 'date') {
+          colDate = idx;
+        } else if (c.includes('miền') || c.includes('khu vực') || c.includes('chi nhánh') || c === 'region') {
+          colRegion = idx;
+        } else if (c.includes('dịch vụ') || c === 'service') {
+          colService = idx;
+        } else if (c.includes('vat') || c.includes('chi phí (vat)') || c.includes('chi phí vat')) {
+          colCostVat = idx;
+        } else if (c.includes('cpl')) {
+          if (colCpl === -1) colCpl = idx;
+        } else if (c.includes('thô') || c.includes('lead thô') || c.includes('data thô')) {
+          colLeadTho = idx;
+        } else if (c.includes('chất lượng') || c.includes('lead cl') || c.includes('data cl') || c === 'cl' || c.endsWith(' cl')) {
+          colLeadCL = idx;
+        } else if (c.includes('chi phí') || c.includes('ngân sách') || c.includes('budget')) {
+          if (c.includes('$') || c.includes('usd')) {
+            colTotalBudget = idx;
+          } else {
+            if (colBudgetVnd === -1) colBudgetVnd = idx;
+          }
+        }
+      });
+      break;
+    }
+  }
+
+  // Fallback defaults if header search yielded incomplete results
+  if (colDate === -1) colDate = 0;
+  if (colRegion === -1) colRegion = 1;
+  if (colService === -1) colService = 2;
+  if (colTotalBudget === -1) colTotalBudget = 3;
+
+  if (colBudgetVnd === -1) colBudgetVnd = 4;
+  if (colCostVat === -1 && colBudgetVnd !== -1 && rows[headerRowIndex]?.[colBudgetVnd + 1]?.toLowerCase().includes('vat')) {
+    colCostVat = colBudgetVnd + 1;
+  }
+
+  if (colLeadTho === -1) {
+    if (colCostVat !== -1 && colCostVat >= 4) {
+      colLeadTho = colCostVat + 1;
+    } else {
+      colLeadTho = 5;
+    }
+  }
+
+  if (colLeadCL === -1) {
+    colLeadCL = colLeadTho + 1;
+  }
+
+  if (colCpl === -1) {
+    colCpl = colLeadCL + 1;
+  }
+
+  const startIndex = headerRowIndex !== -1 ? headerRowIndex + 1 : 1;
   const records: DailyRecord[] = [];
   let lastDate = '';
   let lastRegion = '';
 
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = startIndex; i < rows.length; i++) {
     const row = rows[i];
     if (!row || row.length < 3) continue;
 
-    const [dateCell, regionCell, serviceCell, totalBudgetCell, budgetVndCell, leadThoCell, leadChatLuongCell, cplCell] = row;
+    const dateCell = row[colDate] || '';
+    const regionCell = row[colRegion] || '';
+    const serviceCell = row[colService] || '';
 
     if (dateCell && dateCell.trim()) {
       lastDate = dateCell.trim();
@@ -252,6 +333,14 @@ function parseDailySheet(csvText: string): DailyRecord[] {
 
     if (isNaN(dayNum) || isNaN(monthNum)) continue;
 
+    const leadTho = parseNumber(row[colLeadTho]);
+    const leadChatLuong = parseNumber(row[colLeadCL]);
+
+    // Use VAT column if present and has value, else fallback to budget VND column
+    const vatVal = colCostVat !== -1 ? parseNumber(row[colCostVat]) : 0;
+    const rawBudgetVnd = parseNumber(row[colBudgetVnd]);
+    const budgetVnd = vatVal > 0 ? vatVal : rawBudgetVnd;
+
     records.push({
       date: lastDate,
       dayNum,
@@ -259,15 +348,49 @@ function parseDailySheet(csvText: string): DailyRecord[] {
       yearNum,
       region: lastRegion || 'Tổng',
       service: normalizeServiceName(serviceCell),
-      totalBudget: parseNumber(totalBudgetCell),
-      budgetVnd: parseNumber(budgetVndCell),
-      leadTho: parseNumber(leadThoCell),
-      leadChatLuong: parseNumber(leadChatLuongCell),
-      cpl: parseNumber(cplCell)
+      totalBudget: parseNumber(row[colTotalBudget]),
+      budgetVnd,
+      costVat: vatVal > 0 ? vatVal : budgetVnd,
+      leadTho,
+      leadChatLuong,
+      cpl: parseNumber(row[colCpl])
     });
   }
 
   return records;
+}
+
+function findMatchingDailyRegion(
+  dailyRegMap: Map<string, any>,
+  regionName: string
+) {
+  if (dailyRegMap.has(regionName)) return dailyRegMap.get(regionName);
+  const targetLower = regionName.toLowerCase().trim();
+  for (const [k, v] of dailyRegMap.entries()) {
+    const kLower = k.toLowerCase().trim();
+    if (kLower === targetLower) return v;
+    if (
+      (targetLower.includes('hồ chí minh') || targetLower === 'hcm') &&
+      (kLower.includes('hồ chí minh') || kLower === 'hcm')
+    ) return v;
+    if (
+      (targetLower.includes('bình dương') || targetLower === 'bd') &&
+      (kLower.includes('bình dương') || kLower === 'bd')
+    ) return v;
+    if (
+      (targetLower.includes('hà nội') || targetLower === 'hn') &&
+      (kLower.includes('hà nội') || kLower === 'hn')
+    ) return v;
+    if (
+      (targetLower.includes('cần thơ') || targetLower === 'ct') &&
+      (kLower.includes('cần thơ') || kLower === 'ct')
+    ) return v;
+    if (
+      (targetLower.includes('đà nẵng') || targetLower === 'đn') &&
+      (kLower.includes('đà nẵng') || kLower === 'đn')
+    ) return v;
+  }
+  return undefined;
 }
 
 // Merge daily records from 'Data Ngày' into monthly datasets when present
@@ -324,7 +447,7 @@ export function mergeDailyIntoMonthly(monthlyData: MonthDataset[], dailyData: Da
     if (!dailyRegMap) return mDataset;
 
     const updatedRegions = mDataset.regions.map((reg) => {
-      const dReg = dailyRegMap.get(reg.name);
+      const dReg = findMatchingDailyRegion(dailyRegMap, reg.name);
       if (!dReg) return reg;
 
       const totalData = dReg.totalData > 0 ? dReg.totalData : reg.totalData;

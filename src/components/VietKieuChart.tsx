@@ -180,7 +180,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                <span>Biểu Đồ Doanh Thu & Chi Phí Việt Kiều Từng Tháng</span>
+                <span>Biểu Đồ Doanh Thu & Chi Phí VAT Từng Tháng</span>
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   Riêng Biệt
                 </span>
@@ -242,7 +242,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
 
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
           <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-            Chi Phí VAT Việt Kiều
+            Chi Phí VAT
           </span>
           <p className="text-xl font-bold text-amber-400 mt-1">
             {formatVND(

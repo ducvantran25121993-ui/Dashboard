@@ -69,10 +69,12 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
   let targetLeadCL = 0;
 
   regions.forEach((r) => {
-    targetLeadCL += r.dataChatLuong || 0;
+    const validRegCL = r.dataChatLuong || 0;
+    targetLeadCL += validRegCL;
     r.services.forEach((s) => {
       const norm = normalizeSvcName(s.name);
-      targetServiceTotals[norm] = (targetServiceTotals[norm] || 0) + (s.dataCount || 0);
+      const validDataCount = s.dataCount || 0;
+      targetServiceTotals[norm] = (targetServiceTotals[norm] || 0) + validDataCount;
       targetServiceCosts[norm] = (targetServiceCosts[norm] || 0) + (s.cp || 0);
     });
   });
@@ -280,7 +282,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
   const getMetricLabel = () => {
     if (metric === 'leadTho') return 'Lead Thô (Data Ngày)';
     if (metric === 'leadChatLuong') return 'Lead Chất Lượng';
-    return 'Chi Phí / Ngân Sách (VNĐ)';
+    return 'Chi Phí VAT (VNĐ)';
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -308,7 +310,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-center text-slate-300 border-t border-slate-800/80 pt-1">
-            <span className="text-amber-400 font-medium">Chi Phí (Ngân Sách):</span>
+            <span className="text-amber-400 font-medium">Chi Phí VAT:</span>
             <span className="font-bold text-amber-300">
               {formatVND(data.budgetVnd)}
             </span>
@@ -479,7 +481,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Chi Phí / Ngân Sách
+              Chi Phí VAT
             </button>
           </div>
         </div>
@@ -539,7 +541,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
 
         <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[11px] font-medium uppercase">Tổng Chi Phí</span>
+            <span className="text-[11px] font-medium uppercase">Chi Phí VAT</span>
             <DollarSign className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <p className="text-lg font-bold text-amber-400 mt-1">
@@ -762,7 +764,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
         <h3 className="text-sm font-bold text-slate-200 mb-3 flex items-center justify-between">
           <span>Bảng Tổng Hợp Data &amp; Chi Phí Theo Từng Dịch Vụ ({monthLabel})</span>
           <span className="text-xs text-amber-400 font-semibold bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-lg">
-            Tổng Chi Phí: {formatVND(grandTotalCost)}
+            Chi Phí VAT: {formatVND(grandTotalCost)}
           </span>
         </h3>
 
@@ -773,7 +775,7 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                 <th className="py-2.5 px-3">Dịch Vụ</th>
                 <th className="py-2.5 px-3 text-right">Lead Thô (Data)</th>
                 <th className="py-2.5 px-3 text-right">Lead Chất Lượng</th>
-                <th className="py-2.5 px-3 text-right">Chi Phí (Ngân Sách)</th>
+                <th className="py-2.5 px-3 text-right">Chi Phí VAT</th>
                 <th className="py-2.5 px-3 text-right">CPL Thô</th>
                 <th className="py-2.5 px-3 text-right">CPL CL</th>
                 <th className="py-2.5 px-3 text-right">% Chi Phí</th>
