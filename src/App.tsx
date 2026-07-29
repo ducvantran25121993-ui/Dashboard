@@ -59,9 +59,9 @@ export default function App() {
 
   const [staffPassword, setStaffPassword] = useState<string>(() => {
     try {
-      return localStorage.getItem('dashboard_staff_password') || '123@';
+      return localStorage.getItem('dashboard_staff_password') || '123@!';
     } catch {
-      return '123@';
+      return '123@!';
     }
   });
 
@@ -173,7 +173,7 @@ export default function App() {
           staffPassword={staffPassword}
           onResetToDefaultPassword={() => {
             handleSaveAdminPassword('123456');
-            handleSaveStaffPassword('123@');
+            handleSaveStaffPassword('123@!');
           }}
         />
       )}
