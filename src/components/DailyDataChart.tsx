@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { Activity, DollarSign, Target, TrendingUp, Users, Layers, BarChart3, LineChart as LineIcon } from 'lucide-react';
+import { Activity, DollarSign, Target, TrendingUp, Users, Layers, BarChart3, LineChart as LineIcon, Calendar } from 'lucide-react';
 import { DailyRecord } from '../services/googleSheetsService';
 import { RegionData } from '../data/revenueData';
 import { formatVND } from '../utils/formatters';
@@ -60,6 +60,9 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
 }) => {
   const [selectedService, setSelectedService] = useState<string>('all');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [datePreset, setDatePreset] = useState<string>('all');
+  const [startDay, setStartDay] = useState<number>(1);
+  const [endDay, setEndDay] = useState<number>(31);
   const [metric, setMetric] = useState<'leadTho' | 'leadChatLuong' | 'budgetVnd'>('leadTho');
   const [chartType, setChartType] = useState<'line' | 'area' | 'bar'>('line');
 
@@ -206,14 +209,53 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
     }
   }
 
-  // Aggregate monthly summary stats per service across all active days
-  const allDaysList = Object.values(dayMap);
+  // Aggregate monthly summary stats & available day range
+  const allDaysList = Object.values(dayMap).sort((a, b) => a.day - b.day);
+  const availableDays = allDaysList.map((d) => d.day);
+  const minDayInMap = availableDays.length > 0 ? availableDays[0] : 1;
+  const maxDayInMap = availableDays.length > 0 ? availableDays[availableDays.length - 1] : daysInMonth;
+
+  // Effective start and end days
+  const effectiveStartDay = datePreset === 'all' ? minDayInMap : Math.max(minDayInMap, startDay);
+  const effectiveEndDay = datePreset === 'all' ? maxDayInMap : Math.min(maxDayInMap, endDay);
+
+  // Filtered days list based on active date range
+  const filteredDaysList = allDaysList.filter(
+    (d) => d.day >= effectiveStartDay && d.day <= effectiveEndDay
+  );
+
+  const handlePresetChange = (preset: string) => {
+    setDatePreset(preset);
+    if (preset === 'all') {
+      setStartDay(minDayInMap);
+      setEndDay(maxDayInMap);
+    } else if (preset === 'w1') {
+      setStartDay(1);
+      setEndDay(Math.min(7, maxDayInMap));
+    } else if (preset === 'w2') {
+      setStartDay(8);
+      setEndDay(Math.min(14, maxDayInMap));
+    } else if (preset === 'w3') {
+      setStartDay(15);
+      setEndDay(Math.min(21, maxDayInMap));
+    } else if (preset === 'w4') {
+      setStartDay(22);
+      setEndDay(maxDayInMap);
+    } else if (preset === 'h1') {
+      setStartDay(1);
+      setEndDay(Math.min(15, maxDayInMap));
+    } else if (preset === 'h2') {
+      setStartDay(16);
+      setEndDay(maxDayInMap);
+    }
+  };
+
   const serviceSummaryList = uniqueServices.map((svc) => {
     let svcTho = 0;
     let svcCL = 0;
     let svcCost = 0;
 
-    allDaysList.forEach((d) => {
+    filteredDaysList.forEach((d) => {
       svcTho += d.serviceLeads[svc] || 0;
       svcCL += d.serviceQuality[svc] || 0;
       svcCost += d.serviceBudgets[svc] || 0;
@@ -234,41 +276,39 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
 
   const grandTotalCost = serviceSummaryList.reduce((s, x) => s + x.costVnd, 0);
 
-  // Filter daily data based on selectedService and selectedRegion
-  const chartData = Object.values(dayMap)
-    .sort((a, b) => a.day - b.day)
-    .map((d) => {
-      let displayTho = d.leadTho;
-      let displayCL = d.leadChatLuong;
-      let displayBudget = d.budgetVnd;
+  // Filter daily data based on active date range, selectedService and selectedRegion
+  const chartData = filteredDaysList.map((d) => {
+    let displayTho = d.leadTho;
+    let displayCL = d.leadChatLuong;
+    let displayBudget = d.budgetVnd;
 
-      if (selectedService !== 'all') {
-        displayTho = d.serviceLeads[selectedService] || 0;
-        displayCL = d.serviceQuality[selectedService] || 0;
-        displayBudget = d.serviceBudgets[selectedService] || 0;
-      }
+    if (selectedService !== 'all') {
+      displayTho = d.serviceLeads[selectedService] || 0;
+      displayCL = d.serviceQuality[selectedService] || 0;
+      displayBudget = d.serviceBudgets[selectedService] || 0;
+    }
 
-      if (selectedRegion !== 'all' && d.regionData[selectedRegion]) {
-        displayTho = d.regionData[selectedRegion].leadTho;
-        displayCL = d.regionData[selectedRegion].leadChatLuong;
-        displayBudget = d.regionData[selectedRegion].budgetVnd;
-      }
+    if (selectedRegion !== 'all' && d.regionData[selectedRegion]) {
+      displayTho = d.regionData[selectedRegion].leadTho;
+      displayCL = d.regionData[selectedRegion].leadChatLuong;
+      displayBudget = d.regionData[selectedRegion].budgetVnd;
+    }
 
-      const dayObj: any = {
-        ...d,
-        leadTho: displayTho,
-        leadChatLuong: displayCL,
-        budgetVnd: displayBudget,
-      };
+    const dayObj: any = {
+      ...d,
+      leadTho: displayTho,
+      leadChatLuong: displayCL,
+      budgetVnd: displayBudget,
+    };
 
-      uniqueServices.forEach((svc) => {
-        dayObj[`svc_lead_${svc}`] = d.serviceLeads[svc] || 0;
-        dayObj[`svc_quality_${svc}`] = d.serviceQuality[svc] || 0;
-        dayObj[`svc_budget_${svc}`] = d.serviceBudgets[svc] || 0;
-      });
-
-      return dayObj;
+    uniqueServices.forEach((svc) => {
+      dayObj[`svc_lead_${svc}`] = d.serviceLeads[svc] || 0;
+      dayObj[`svc_quality_${svc}`] = d.serviceQuality[svc] || 0;
+      dayObj[`svc_budget_${svc}`] = d.serviceBudgets[svc] || 0;
     });
+
+    return dayObj;
+  });
 
   // Calculate totals for KPIs
   const totalLeadsTho = chartData.reduce((sum, d) => sum + d.leadTho, 0);
@@ -369,7 +409,10 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
             <span>Data Ngày & Chi Phí Theo Dịch Vụ ({monthLabel})</span>
           </h2>
           <p className="text-xs text-slate-400 mt-1">
-            Chi tiết biến động Data ngày &amp; Chi phí Marketing từng Dịch vụ từ sheet <strong className="text-teal-400">Data Ngày</strong> • {chartData.length} ngày trong tháng
+            Chi tiết biến động Data ngày &amp; Chi phí Marketing từng Dịch vụ từ sheet <strong className="text-teal-400">Data Ngày</strong> • {chartData.length} ngày
+            {datePreset !== 'all' || effectiveStartDay > minDayInMap || effectiveEndDay < maxDayInMap
+              ? ` (Từ ngày ${effectiveStartDay}/${activeMonth} đến ${effectiveEndDay}/${activeMonth})`
+              : ` trong ${monthLabel}`}
           </p>
         </div>
 
@@ -410,6 +453,28 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
               </select>
             </div>
           )}
+
+          {/* Date Preset Selector */}
+          <div className="flex items-center gap-1.5 bg-slate-800/90 border border-slate-700/80 px-2.5 py-1 rounded-xl text-xs">
+            <Calendar className="w-3.5 h-3.5 text-teal-400" />
+            <span className="text-slate-400 font-medium">Lọc Ngày:</span>
+            <select
+              value={datePreset}
+              onChange={(e) => handlePresetChange(e.target.value)}
+              className="bg-transparent text-white font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="all" className="bg-slate-900 text-white">
+                Tất cả ({availableDays.length} ngày)
+              </option>
+              <option value="w1" className="bg-slate-900 text-white">Tuần 1 (1-7)</option>
+              <option value="w2" className="bg-slate-900 text-white">Tuần 2 (8-14)</option>
+              <option value="w3" className="bg-slate-900 text-white">Tuần 3 (15-21)</option>
+              <option value="w4" className="bg-slate-900 text-white">Tuần 4 (22-31)</option>
+              <option value="h1" className="bg-slate-900 text-white">15 ngày đầu (1-15)</option>
+              <option value="h2" className="bg-slate-900 text-white">15 ngày sau (16-31)</option>
+              <option value="custom" className="bg-slate-900 text-white">Tùy chọn ngày...</option>
+            </select>
+          </div>
 
           {/* Chart Type Toggle */}
           <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700">
@@ -487,35 +552,95 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
         </div>
       </div>
 
-      {/* Service Quick Filter Pills */}
-      {uniqueServices.length > 0 && (
-        <div className="flex items-center gap-1.5 flex-wrap pt-1">
-          <span className="text-xs text-slate-400 font-medium mr-1">Lọc Dịch Vụ:</span>
-          <button
-            onClick={() => setSelectedService('all')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-              selectedService === 'all'
-                ? 'bg-blue-600 text-white shadow'
-                : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
-            }`}
-          >
-            Tất cả ({uniqueServices.length})
-          </button>
-          {uniqueServices.map((svc) => (
+      {/* Service & Date Range Quick Filter Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-1">
+        {/* Service Quick Filter Pills */}
+        {uniqueServices.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-slate-400 font-medium mr-1">Lọc Dịch Vụ:</span>
             <button
-              key={svc}
-              onClick={() => setSelectedService(svc)}
+              onClick={() => setSelectedService('all')}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                selectedService === svc
+                selectedService === 'all'
                   ? 'bg-blue-600 text-white shadow'
                   : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
               }`}
             >
-              {svc}
+              Tất cả ({uniqueServices.length})
             </button>
-          ))}
+            {uniqueServices.map((svc) => (
+              <button
+                key={svc}
+                onClick={() => setSelectedService(svc)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedService === svc
+                    ? 'bg-blue-600 text-white shadow'
+                    : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700/60'
+                }`}
+              >
+                {svc}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Date Picker Range (Từ ngày -> Đến ngày) */}
+        <div className="flex items-center gap-2 flex-wrap text-xs bg-slate-800/80 border border-slate-700/70 px-3 py-1.5 rounded-xl">
+          <span className="text-slate-300 font-medium flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5 text-teal-400" />
+            Lọc Ngày:
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400">Từ</span>
+            <select
+              value={effectiveStartDay}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setStartDay(v);
+                if (v > effectiveEndDay) setEndDay(v);
+                setDatePreset('custom');
+              }}
+              className="bg-slate-900 border border-slate-700 text-teal-300 font-bold px-2 py-0.5 rounded-lg focus:outline-none cursor-pointer"
+            >
+              {availableDays.map((d) => (
+                <option key={d} value={d} className="bg-slate-900 text-white">
+                  Ngày {d}/{activeMonth}
+                </option>
+              ))}
+            </select>
+            <span className="text-slate-400">đến</span>
+            <select
+              value={effectiveEndDay}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setEndDay(v);
+                if (v < effectiveStartDay) setStartDay(v);
+                setDatePreset('custom');
+              }}
+              className="bg-slate-900 border border-slate-700 text-teal-300 font-bold px-2 py-0.5 rounded-lg focus:outline-none cursor-pointer"
+            >
+              {availableDays.map((d) => (
+                <option key={d} value={d} className="bg-slate-900 text-white">
+                  Ngày {d}/{activeMonth}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {(datePreset !== 'all' || effectiveStartDay > minDayInMap || effectiveEndDay < maxDayInMap) && (
+            <button
+              onClick={() => {
+                setDatePreset('all');
+                setStartDay(minDayInMap);
+                setEndDay(maxDayInMap);
+              }}
+              className="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[11px] font-semibold hover:bg-rose-500/30 transition-all ml-1"
+            >
+              Xóa lọc ngày
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* KPI Cards for Daily Data & Budget */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
