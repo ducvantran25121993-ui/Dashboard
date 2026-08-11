@@ -367,54 +367,6 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                             </tr>
                           );
                         })}
-
-                        {/* Summary / Total row for this specific expanded region */}
-                        <tr
-                          key={`${r.name}-subtotal`}
-                          className="bg-slate-900/90 border-t border-b border-slate-700/80 font-bold text-slate-100"
-                        >
-                          <td></td>
-                          <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-extrabold text-cyan-300 whitespace-nowrap">
-                            <span className="text-xs uppercase tracking-wider text-cyan-300 font-extrabold whitespace-nowrap">
-                              TỔNG {r.name.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-cyan-400 whitespace-nowrap">
-                            {r.dataTong.toLocaleString('vi-VN')}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400 whitespace-nowrap">
-                            {r.dataChatLuong.toLocaleString('vi-VN')}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400 whitespace-nowrap">
-                            {formatVND(r.revenue, displayUnit)}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-amber-400 whitespace-nowrap">
-                            {formatVND(r.costVAT, displayUnit)}
-                          </td>
-                          <td
-                            className={`py-2.5 px-3 text-right font-extrabold whitespace-nowrap ${
-                              r.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
-                            }`}
-                          >
-                            {formatVND(r.profit, displayUnit)}
-                          </td>
-                          <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                            <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                                r.ratio <= 15
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                  : r.ratio <= 35
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                              }`}
-                            >
-                              {formatPercent(r.ratio)}
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-bold whitespace-nowrap">
-                            {r.services.length} gói DV
-                          </td>
-                        </tr>
                       </>
                     )}
                   </React.Fragment>
