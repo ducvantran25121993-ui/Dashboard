@@ -1093,17 +1093,17 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
 
         <div className="overflow-x-auto rounded-xl border border-slate-800">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+            <thead className="bg-slate-800 text-slate-400 uppercase tracking-wider font-semibold whitespace-nowrap">
               <tr>
-                <th className="py-3 px-4">Tháng</th>
-                <th className="py-3 px-4 text-right">Data Dịch Vụ</th>
-                <th className="py-3 px-4 text-right">Data CL</th>
-                <th className="py-3 px-4 text-right">Tỷ Lệ CL</th>
-                <th className="py-3 px-4 text-right">Doanh Thu</th>
-                <th className="py-3 px-4 text-right">Chi Phí (VAT)</th>
-                <th className="py-3 px-4 text-right">Lợi Nhuận</th>
-                <th className="py-3 px-4 text-center">% CP/DT</th>
-                <th className="py-3 px-4 text-center">Đạt KPI (≤15%)</th>
+                <th className="py-3 px-4 whitespace-nowrap">Tháng</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Data Dịch Vụ</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Data CL</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Tỷ Lệ CL</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Doanh Thu</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Chi Phí (VAT)</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Lợi Nhuận</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">% CP/DT</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">Đạt KPI (≤15%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 bg-slate-900/50">

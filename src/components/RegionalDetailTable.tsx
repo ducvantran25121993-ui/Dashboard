@@ -186,71 +186,71 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="bg-slate-800/80 text-slate-300 uppercase tracking-wider font-semibold border-b border-slate-800 text-[11px] sm:text-xs">
             <tr>
-              <th className="py-3 px-3 w-10"></th>
+              <th className="py-3 px-3 w-10 whitespace-nowrap"></th>
               <th
                 onClick={() => handleSort('name')}
-                className="py-3 px-3 cursor-pointer hover:text-white"
+                className="py-3 px-3 cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 whitespace-nowrap">
                   <span>Khu Vực</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('dataTong')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                   <span>Data Dịch Vụ</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('dataChatLuong')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                   <span>Data CL</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('revenue')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                   <span>Doanh Thu</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('costVAT')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                   <span>Chi Phí (VAT)</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('profit')}
-                className="py-3 px-3 text-right cursor-pointer hover:text-white"
+                className="py-3 px-3 text-right cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center justify-end gap-1">
+                <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                   <span>Lợi Nhuận</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
               <th
                 onClick={() => handleSort('ratio')}
-                className="py-3 px-3 text-center cursor-pointer hover:text-white"
+                className="py-3 px-3 text-center cursor-pointer hover:text-white whitespace-nowrap"
               >
-                <div className="flex items-center justify-center gap-1">
+                <div className="flex items-center justify-center gap-1 whitespace-nowrap">
                   <span>% CP/DT (≤15%)</span>
-                  <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  <ArrowUpDown className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
               </th>
-              <th className="py-3 px-3 text-center">Dịch Vụ</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">Dịch Vụ</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 bg-slate-900/50">

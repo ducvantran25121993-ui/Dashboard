@@ -367,7 +367,7 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
 
         <div className="overflow-x-auto rounded-xl border border-slate-800">
           <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-slate-800/80 text-slate-400 uppercase tracking-wider font-semibold">
+            <thead className="bg-slate-800/80 text-slate-400 uppercase tracking-wider font-semibold whitespace-nowrap">
               <tr>
                 <th className="py-2.5 px-3">Tháng</th>
                 <th className="py-2.5 px-3 text-right">Doanh Thu</th>
