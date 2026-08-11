@@ -918,26 +918,26 @@ export const DailyDataChart: React.FC<DailyDataChartProps> = ({
                       isSelected ? 'bg-blue-900/30 font-medium' : ''
                     }`}
                   >
-                    <td className="py-2.5 px-3 text-white font-semibold flex items-center gap-2">
+                    <td className="py-2.5 px-3 text-white font-semibold flex items-center gap-2 whitespace-nowrap">
                       <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-blue-400' : 'bg-slate-600'}`} />
                       {svc.name}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-cyan-300 font-medium">
+                    <td className="py-2.5 px-3 text-right text-cyan-300 font-medium whitespace-nowrap">
                       {svc.leadTho.toLocaleString('vi-VN')}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-emerald-300 font-medium">
+                    <td className="py-2.5 px-3 text-right text-emerald-300 font-medium whitespace-nowrap">
                       {svc.leadCL.toLocaleString('vi-VN')}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-amber-300 font-semibold">
+                    <td className="py-2.5 px-3 text-right text-amber-300 font-semibold whitespace-nowrap">
                       {formatVND(svc.costVnd)}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-slate-300">
+                    <td className="py-2.5 px-3 text-right text-slate-300 whitespace-nowrap">
                       {svc.cplTho > 0 ? `${formatVND(svc.cplTho)}` : '0 đ'}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-teal-300">
+                    <td className="py-2.5 px-3 text-right text-teal-300 whitespace-nowrap">
                       {svc.cplCL > 0 ? `${formatVND(svc.cplCL)}` : '0 đ'}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-slate-400 font-medium">
+                    <td className="py-2.5 px-3 text-right text-slate-400 font-medium whitespace-nowrap">
                       {pctCost}%
                     </td>
                   </tr>

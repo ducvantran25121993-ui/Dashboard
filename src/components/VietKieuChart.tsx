@@ -390,71 +390,71 @@ export const VietKieuChart: React.FC<VietKieuChartProps> = ({
                       isCurrentActive ? 'bg-amber-500/10 font-medium' : ''
                     }`}
                   >
-                    <td className="py-2.5 px-3 font-bold text-white flex items-center gap-1.5">
+                    <td className="py-2.5 px-3 font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
                       {m.monthLabel}
                       {isCurrentActive && (
-                        <span className="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded">
+                        <span className="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 py-0.5 rounded whitespace-nowrap">
                           Đang xem
                         </span>
                       )}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-bold text-emerald-400">
+                    <td className="py-2.5 px-3 text-right font-bold text-emerald-400 whitespace-nowrap">
                       {formatVND(m.revenue, displayUnit)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-amber-400">
+                    <td className="py-2.5 px-3 text-right font-semibold text-amber-400 whitespace-nowrap">
                       {formatVND(m.costVAT, displayUnit)}
                     </td>
                     <td
-                      className={`py-2.5 px-3 text-right font-bold ${
+                      className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${
                         m.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
                       }`}
                     >
                       {formatVND(m.profit, displayUnit)}
                     </td>
-                    <td className="py-2.5 px-3 text-center font-semibold text-purple-300">
+                    <td className="py-2.5 px-3 text-center font-semibold text-purple-300 whitespace-nowrap">
                       {formatPercent(m.ratio)}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-cyan-400">
+                    <td className="py-2.5 px-3 text-right font-semibold text-cyan-400 whitespace-nowrap">
                       {m.dataDichVu.toLocaleString('vi-VN')}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-400">
+                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-400 whitespace-nowrap">
                       {m.dataChatLuong.toLocaleString('vi-VN')}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-300">
+                    <td className="py-2.5 px-3 text-right font-semibold text-emerald-300 whitespace-nowrap">
                       {formatPercent(m.qualityRatio)}
                     </td>
-                    <td className="py-2.5 px-3 text-right text-slate-300">
+                    <td className="py-2.5 px-3 text-right text-slate-300 whitespace-nowrap">
                       {formatVND(m.cpPerDataSvc, displayUnit)}
                     </td>
                   </tr>
                 );
               })}
             </tbody>
-            <tfoot className="bg-slate-800/90 font-bold text-white border-t border-slate-700">
+            <tfoot className="bg-slate-800/90 font-bold text-white border-t border-slate-700 whitespace-nowrap">
               <tr>
-                <td className="py-2.5 px-3">TỔNG QUAN</td>
-                <td className="py-2.5 px-3 text-right text-emerald-400 font-bold">
+                <td className="py-2.5 px-3 whitespace-nowrap">TỔNG QUAN</td>
+                <td className="py-2.5 px-3 text-right text-emerald-400 font-bold whitespace-nowrap">
                   {formatVND(grandRevenue, displayUnit)}
                 </td>
-                <td className="py-2.5 px-3 text-right text-amber-400 font-bold">
+                <td className="py-2.5 px-3 text-right text-amber-400 font-bold whitespace-nowrap">
                   {formatVND(grandCostVAT, displayUnit)}
                 </td>
-                <td className={`py-2.5 px-3 text-right font-bold ${grandProfit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+                <td className={`py-2.5 px-3 text-right font-bold whitespace-nowrap ${grandProfit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                   {formatVND(grandProfit, displayUnit)}
                 </td>
-                <td className="py-2.5 px-3 text-center text-purple-300 font-bold">
+                <td className="py-2.5 px-3 text-center text-purple-300 font-bold whitespace-nowrap">
                   {formatPercent(grandRatio)}
                 </td>
-                <td className="py-2.5 px-3 text-right text-cyan-400 font-bold">
+                <td className="py-2.5 px-3 text-right text-cyan-400 font-bold whitespace-nowrap">
                   {grandDataDichVu.toLocaleString('vi-VN')}
                 </td>
-                <td className="py-2.5 px-3 text-right text-emerald-400 font-bold">
+                <td className="py-2.5 px-3 text-right text-emerald-400 font-bold whitespace-nowrap">
                   {grandDataChatLuong.toLocaleString('vi-VN')}
                 </td>
-                <td className="py-2.5 px-3 text-right text-emerald-300 font-bold">
+                <td className="py-2.5 px-3 text-right text-emerald-300 font-bold whitespace-nowrap">
                   {formatPercent(grandQualityRatio)}
                 </td>
-                <td className="py-2.5 px-3 text-right text-slate-300 font-bold">
+                <td className="py-2.5 px-3 text-right text-slate-300 font-bold whitespace-nowrap">
                   {formatVND(avgCpPerDataSvc, displayUnit)}
                 </td>
               </tr>

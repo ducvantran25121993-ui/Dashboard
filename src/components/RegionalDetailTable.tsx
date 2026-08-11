@@ -282,29 +282,29 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                           )
                         ) : null}
                       </td>
-                      <td className="py-3 px-3 font-bold text-white text-sm">
+                      <td className="py-3 px-3 font-bold text-white text-sm whitespace-nowrap">
                         {r.name}
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-cyan-400 text-sm">
+                      <td className="py-3 px-3 text-right font-bold text-cyan-400 text-sm whitespace-nowrap">
                         {r.dataTong.toLocaleString('vi-VN')}
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-emerald-400 text-sm">
+                      <td className="py-3 px-3 text-right font-bold text-emerald-400 text-sm whitespace-nowrap">
                         {r.dataChatLuong.toLocaleString('vi-VN')}
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-emerald-400 text-sm">
+                      <td className="py-3 px-3 text-right font-bold text-emerald-400 text-sm whitespace-nowrap">
                         {formatVND(r.revenue, displayUnit)}
                       </td>
-                      <td className="py-3 px-3 text-right font-bold text-amber-400 text-sm">
+                      <td className="py-3 px-3 text-right font-bold text-amber-400 text-sm whitespace-nowrap">
                         {formatVND(r.costVAT, displayUnit)}
                       </td>
                       <td
-                        className={`py-3 px-3 text-right font-bold text-sm ${
+                        className={`py-3 px-3 text-right font-bold text-sm whitespace-nowrap ${
                           r.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
                         }`}
                       >
                         {formatVND(r.profit, displayUnit)}
                       </td>
-                      <td className="py-3 px-3 text-center">
+                      <td className="py-3 px-3 text-center whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${
                             r.ratio <= 15
@@ -347,22 +347,22 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                               className="bg-slate-950/60 border-l-2 border-l-blue-500 text-slate-400"
                             >
                               <td></td>
-                              <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-medium text-slate-300">
+                              <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-medium text-slate-300 whitespace-nowrap">
                                 <Layers className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                                <span>{svc.name}</span>
+                                <span className="whitespace-nowrap">{svc.name}</span>
                               </td>
-                              <td className="py-2.5 px-3 text-right font-semibold text-cyan-300">
+                              <td className="py-2.5 px-3 text-right font-semibold text-cyan-300 whitespace-nowrap">
                                 {svcDataDV ? `${svcDataDV.toLocaleString('vi-VN')} data` : '—'}
                               </td>
-                              <td className="py-2.5 px-3 text-right font-semibold text-emerald-400">
+                              <td className="py-2.5 px-3 text-right font-semibold text-emerald-400 whitespace-nowrap">
                                 {svcDataCL ? `${svcDataCL.toLocaleString('vi-VN')} data` : '—'}
                               </td>
-                              <td className="py-2.5 px-3 text-right text-slate-500">—</td>
-                              <td className="py-2.5 px-3 text-right text-amber-300/90 font-medium">
+                              <td className="py-2.5 px-3 text-right text-slate-500 whitespace-nowrap">—</td>
+                              <td className="py-2.5 px-3 text-right text-amber-300/90 font-medium whitespace-nowrap">
                                 CP DV: {formatVND(svc.cp, displayUnit)}
                               </td>
-                              <td className="py-2.5 px-3 text-right text-slate-500">—</td>
-                              <td className="py-2.5 px-3 text-center text-slate-500">—</td>
+                              <td className="py-2.5 px-3 text-right text-slate-500 whitespace-nowrap">—</td>
+                              <td className="py-2.5 px-3 text-center text-slate-500 whitespace-nowrap">—</td>
                               <td></td>
                             </tr>
                           );
@@ -374,31 +374,31 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                           className="bg-slate-900/90 border-t border-b border-slate-700/80 font-bold text-slate-100"
                         >
                           <td></td>
-                          <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-extrabold text-cyan-300">
-                            <span className="text-xs uppercase tracking-wider text-cyan-300 font-extrabold">
+                          <td className="py-2.5 px-3 pl-8 flex items-center gap-2 font-extrabold text-cyan-300 whitespace-nowrap">
+                            <span className="text-xs uppercase tracking-wider text-cyan-300 font-extrabold whitespace-nowrap">
                               TỔNG {r.name.toUpperCase()}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-cyan-400">
+                          <td className="py-2.5 px-3 text-right font-extrabold text-cyan-400 whitespace-nowrap">
                             {r.dataTong.toLocaleString('vi-VN')}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400">
+                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400 whitespace-nowrap">
                             {r.dataChatLuong.toLocaleString('vi-VN')}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400">
+                          <td className="py-2.5 px-3 text-right font-extrabold text-emerald-400 whitespace-nowrap">
                             {formatVND(r.revenue, displayUnit)}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-extrabold text-amber-400">
+                          <td className="py-2.5 px-3 text-right font-extrabold text-amber-400 whitespace-nowrap">
                             {formatVND(r.costVAT, displayUnit)}
                           </td>
                           <td
-                            className={`py-2.5 px-3 text-right font-extrabold ${
+                            className={`py-2.5 px-3 text-right font-extrabold whitespace-nowrap ${
                               r.profit >= 0 ? 'text-blue-400' : 'text-rose-400'
                             }`}
                           >
                             {formatVND(r.profit, displayUnit)}
                           </td>
-                          <td className="py-2.5 px-3 text-center">
+                          <td className="py-2.5 px-3 text-center whitespace-nowrap">
                             <span
                               className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                                 r.ratio <= 15
@@ -411,7 +411,7 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
                               {formatPercent(r.ratio)}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-bold">
+                          <td className="py-2.5 px-3 text-center text-slate-300 text-[11px] font-bold whitespace-nowrap">
                             {r.services.length} gói DV
                           </td>
                         </tr>
@@ -425,40 +425,40 @@ export const RegionalDetailTable: React.FC<RegionalDetailTableProps> = ({
 
           {/* Table Footer with Summary */}
           {processedRegions.length > 0 && (
-            <tfoot className="bg-slate-800/90 font-bold text-white border-t-2 border-slate-700">
+            <tfoot className="bg-slate-800/90 font-bold text-white border-t-2 border-slate-700 whitespace-nowrap">
               <tr>
-                <td className="py-3 px-3"></td>
-                <td className="py-3.5 px-3 text-sm font-extrabold uppercase text-slate-200">
+                <td className="py-3 px-3 whitespace-nowrap"></td>
+                <td className="py-3.5 px-3 text-sm font-extrabold uppercase text-slate-200 whitespace-nowrap">
                   TỔNG KHU VỰC
-                  <span className="block text-[11px] normal-case text-emerald-400 font-normal">
+                  <span className="block text-[11px] normal-case text-emerald-400 font-normal whitespace-nowrap">
                     ({processedRegions.length} Khu Vực • Đã trừ Doanh Thu Việt Kiều)
                   </span>
                 </td>
-                <td className="py-3.5 px-3 text-right text-cyan-400 text-base font-extrabold">
+                <td className="py-3.5 px-3 text-right text-cyan-400 text-base font-extrabold whitespace-nowrap">
                   {totalDataTong.toLocaleString('vi-VN')}
                 </td>
-                <td className="py-3.5 px-3 text-right text-emerald-400 text-base font-extrabold">
+                <td className="py-3.5 px-3 text-right text-emerald-400 text-base font-extrabold whitespace-nowrap">
                   {totalDataChatLuong.toLocaleString('vi-VN')}
                 </td>
-                <td className="py-3.5 px-3 text-right text-emerald-400 text-base font-extrabold">
+                <td className="py-3.5 px-3 text-right text-emerald-400 text-base font-extrabold whitespace-nowrap">
                   {formatVND(totalRevenue, displayUnit)}
                 </td>
-                <td className="py-3.5 px-3 text-right text-amber-400 text-base font-extrabold">
+                <td className="py-3.5 px-3 text-right text-amber-400 text-base font-extrabold whitespace-nowrap">
                   {formatVND(totalCostVAT, displayUnit)}
                 </td>
                 <td
-                  className={`py-3.5 px-3 text-right text-base font-extrabold ${
+                  className={`py-3.5 px-3 text-right text-base font-extrabold whitespace-nowrap ${
                     totalProfit >= 0 ? 'text-blue-400' : 'text-rose-400'
                   }`}
                 >
                   {formatVND(totalProfit, displayUnit)}
                 </td>
-                <td className="py-3.5 px-3 text-center">
+                <td className="py-3.5 px-3 text-center whitespace-nowrap">
                   <span className="bg-slate-700/80 text-purple-300 px-3 py-1 rounded-full text-xs font-bold border border-slate-600">
                     {formatPercent(totalRatio)}
                   </span>
                 </td>
-                <td className="py-3.5 px-3 text-center text-slate-400 text-xs font-semibold">
+                <td className="py-3.5 px-3 text-center text-slate-400 text-xs font-semibold whitespace-nowrap">
                   {processedRegions.reduce((sum, r) => sum + r.services.length, 0)} gói DV
                 </td>
               </tr>

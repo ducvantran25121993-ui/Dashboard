@@ -1109,29 +1109,29 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
             <tbody className="divide-y divide-slate-800 bg-slate-900/50">
               {monthlySummary.map((m) => (
                 <tr key={m.monthNum} className="hover:bg-slate-800/50 transition-colors">
-                  <td className="py-3 px-4 font-bold text-white text-sm">{m.monthLabel}</td>
-                  <td className="py-3 px-4 text-right font-bold text-cyan-400 text-sm">
+                  <td className="py-3 px-4 font-bold text-white text-sm whitespace-nowrap">{m.monthLabel}</td>
+                  <td className="py-3 px-4 text-right font-bold text-cyan-400 text-sm whitespace-nowrap">
                     {m.dataTong.toLocaleString('vi-VN')}
                   </td>
-                  <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm">
+                  <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm whitespace-nowrap">
                     {m.dataChatLuong.toLocaleString('vi-VN')}
                   </td>
-                  <td className="py-3 px-4 text-right font-semibold text-emerald-300 text-sm">
+                  <td className="py-3 px-4 text-right font-semibold text-emerald-300 text-sm whitespace-nowrap">
                     {formatPercent(m.dataTong > 0 ? (m.dataChatLuong / m.dataTong) * 100 : 0)}
                   </td>
-                  <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm">
+                  <td className="py-3 px-4 text-right font-bold text-emerald-400 text-sm whitespace-nowrap">
                     {formatVND(m.revenue, displayUnit)}
                   </td>
-                  <td className="py-3 px-4 text-right font-bold text-amber-400 text-sm">
+                  <td className="py-3 px-4 text-right font-bold text-amber-400 text-sm whitespace-nowrap">
                     {formatVND(m.costVAT, displayUnit)}
                   </td>
-                  <td className={`py-3 px-4 text-right font-bold text-sm ${m.profit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+                  <td className={`py-3 px-4 text-right font-bold text-sm whitespace-nowrap ${m.profit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                     {formatVND(m.profit, displayUnit)}
                   </td>
-                  <td className="py-3 px-4 text-center font-semibold text-purple-300">
+                  <td className="py-3 px-4 text-center font-semibold text-purple-300 whitespace-nowrap">
                     {m.hasData ? formatPercent(m.ratio) : '-'}
                   </td>
-                  <td className="py-3 px-4 text-center">
+                  <td className="py-3 px-4 text-center whitespace-nowrap">
                     {!m.hasData ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
                         Chưa có số liệu
@@ -1151,31 +1151,31 @@ export const SixMonthOverview: React.FC<SixMonthOverviewProps> = ({
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-slate-800 font-bold text-white border-t-2 border-slate-700">
+            <tfoot className="bg-slate-800 font-bold text-white border-t-2 border-slate-700 whitespace-nowrap">
               <tr>
-                <td className="py-3.5 px-4 text-sm">TỔNG QUAN</td>
-                <td className="py-3.5 px-4 text-right text-cyan-400 text-base">
+                <td className="py-3.5 px-4 text-sm whitespace-nowrap">TỔNG QUAN</td>
+                <td className="py-3.5 px-4 text-right text-cyan-400 text-base whitespace-nowrap">
                   {grandTotalData.toLocaleString('vi-VN')}
                 </td>
-                <td className="py-3.5 px-4 text-right text-emerald-400 text-base">
+                <td className="py-3.5 px-4 text-right text-emerald-400 text-base whitespace-nowrap">
                   {grandQualityData.toLocaleString('vi-VN')}
                 </td>
-                <td className="py-3.5 px-4 text-right text-emerald-300 text-sm font-semibold">
+                <td className="py-3.5 px-4 text-right text-emerald-300 text-sm font-semibold whitespace-nowrap">
                   {formatPercent(grandTotalData > 0 ? (grandQualityData / grandTotalData) * 100 : 0)}
                 </td>
-                <td className="py-3.5 px-4 text-right text-emerald-400 text-base">
+                <td className="py-3.5 px-4 text-right text-emerald-400 text-base whitespace-nowrap">
                   {formatVND(grandRevenue, displayUnit)}
                 </td>
-                <td className="py-3.5 px-4 text-right text-amber-400 text-base">
+                <td className="py-3.5 px-4 text-right text-amber-400 text-base whitespace-nowrap">
                   {formatVND(grandCostVAT, displayUnit)}
                 </td>
-                <td className={`py-3.5 px-4 text-right text-base ${grandProfit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
+                <td className={`py-3.5 px-4 text-right text-base whitespace-nowrap ${grandProfit >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                   {formatVND(grandProfit, displayUnit)}
                 </td>
-                <td className="py-3.5 px-4 text-center text-purple-300 text-sm">
+                <td className="py-3.5 px-4 text-center text-purple-300 text-sm whitespace-nowrap">
                   {formatPercent(grandRatio)}
                 </td>
-                <td className="py-3.5 px-4 text-center">
+                <td className="py-3.5 px-4 text-center whitespace-nowrap">
                   {isGrandKpiMet ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                       <CheckCircle2 className="w-3.5 h-3.5" />
