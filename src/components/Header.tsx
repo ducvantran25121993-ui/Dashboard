@@ -30,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 6, label: 'Tháng 6' },
     { id: 7, label: 'Tháng 7' },
     { id: 8, label: 'Tháng 8' },
+    { id: 9, label: 'Tháng 9' },
     { id: 'overview', label: 'Tổng Quan' },
   ];
 
@@ -130,32 +131,51 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Month Navigation Tabs */}
-        <div className="flex items-center space-x-1.5 overflow-x-auto pt-3 pb-1 no-scrollbar">
-          {months.map((m) => {
-            const isActive = activeTab === m.id;
-            const isOverview = m.id === 'overview';
-            return (
-              <button
-                key={m.id}
-                onClick={() => onSelectTab(m.id)}
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl whitespace-nowrap transition-all duration-150 ${
-                  isActive
-                    ? isOverview
-                      ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-teal-900/30 border border-teal-500/30'
-                      : 'bg-blue-600 text-white shadow-md shadow-blue-900/30 border border-blue-500/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white border border-transparent'
-                }`}
-              >
-                {isOverview ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-300" />
-                ) : (
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                )}
-                <span>{m.label}</span>
-              </button>
-            );
-          })}
+        {/* Month Navigation Tabs - Compact Segmented Pill Bar */}
+        <div className="pt-3 pb-1 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="inline-flex items-center gap-1 p-1 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner max-w-full overflow-x-auto no-scrollbar">
+            {months.map((m) => {
+              const isActive = activeTab === m.id;
+              const isOverview = m.id === 'overview';
+              const shortLabel = typeof m.id === 'number' ? `T${m.id}` : 'Tổng Quan';
+
+              if (isOverview) {
+                return (
+                  <React.Fragment key={m.id}>
+                    {/* Divider before Overview */}
+                    <div className="h-5 w-px bg-slate-800 mx-1 shrink-0" />
+                    <button
+                      onClick={() => onSelectTab(m.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-900/40 ring-1 ring-emerald-400/30 scale-[1.02]'
+                          : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10'
+                      }`}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
+                      <span>{m.label}</span>
+                    </button>
+                  </React.Fragment>
+                );
+              }
+
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => onSelectTab(m.id)}
+                  title={m.label}
+                  className={`flex items-center justify-center px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-blue-400/30 scale-[1.02]'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                >
+                  <span className="sm:hidden">{shortLabel}</span>
+                  <span className="hidden sm:inline">{m.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </header>

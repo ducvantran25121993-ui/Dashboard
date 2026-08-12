@@ -4621,5 +4621,278 @@ export const MONTHLY_DATA: MonthDataset[] = [
         ]
       }
     ]
+  },
+  {
+    "month": 9,
+    "label": "Tháng 9",
+    "regions": [
+      {
+        "name": "Bình Dương",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Bình Phước",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Biên Hòa",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Cần Thơ",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Đà Nẵng",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Quy Nhơn",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Tây Ninh",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Vũng Tàu",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Dĩ An",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "HCM",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "HCM-Imp", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "HCM-Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "HCM-Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "HCM-TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Việt Kiều",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Việt Kiều", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Bạc Liêu",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Cà Mau",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Đồng Tháp",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Sóc Trăng",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Đà Lạt",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Gia Kiệm",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      },
+      {
+        "name": "Không Địa Chỉ",
+        "costVAT": 0,
+        "revenue": 0,
+        "cpDichVu": 0,
+        "cpTong": 0,
+        "totalData": 0,
+        "dataChatLuong": 0,
+        "services": [
+          { "name": "Implant", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Niềng", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "Sứ", "cp": 0, "dataCount": 0, "dataChatLuong": 0 },
+          { "name": "TH", "cp": 0, "dataCount": 0, "dataChatLuong": 0 }
+        ]
+      }
+    ]
   }
 ];
