@@ -167,12 +167,15 @@ export const Header: React.FC<HeaderProps> = ({
                   key={m.id}
                   onClick={() => onSelectTab(m.id)}
                   title={m.label}
-                  className={`relative flex items-center justify-center px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 select-none ${
+                  className={`group relative flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 select-none ${
                     isActive
                       ? 'bg-gradient-to-b from-blue-400 via-blue-600 to-indigo-700 text-white border-t border-cyan-200/70 border-b border-indigo-950/90 shadow-[0_6px_16px_rgba(37,99,235,0.45),inset_0_1px_1px_rgba(255,255,255,0.5)] -translate-y-0.5 scale-[1.04] ring-1 ring-cyan-300/40'
                       : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 hover:-translate-y-0.5 active:translate-y-0 border border-transparent'
                   }`}
                 >
+                  <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${
+                    isActive ? 'text-cyan-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]' : 'text-slate-400/80 group-hover:text-blue-400'
+                  }`} />
                   <span className={`sm:hidden ${isActive ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]' : ''}`}>{shortLabel}</span>
                   <span className={`hidden sm:inline ${isActive ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]' : ''}`}>{m.label}</span>
                   {isActive && (
