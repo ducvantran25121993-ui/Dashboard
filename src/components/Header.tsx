@@ -131,9 +131,9 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Month Navigation Tabs - Compact Segmented Pill Bar */}
-        <div className="pt-3 pb-1 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-          <div className="inline-flex items-center gap-1 p-1 bg-slate-950/60 rounded-2xl border border-slate-800/80 shadow-inner max-w-full overflow-x-auto no-scrollbar">
+        {/* Month Navigation Tabs - Ultra 3D Tactile Floating Bar */}
+        <div className="pt-3 pb-1.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+          <div className="inline-flex items-center gap-1.5 p-1.5 bg-slate-950/80 rounded-2xl border border-slate-800/90 shadow-[inset_0_2px_6px_rgba(0,0,0,0.7)] backdrop-blur-md max-w-full overflow-x-auto no-scrollbar">
             {months.map((m) => {
               const isActive = activeTab === m.id;
               const isOverview = m.id === 'overview';
@@ -142,18 +142,21 @@ export const Header: React.FC<HeaderProps> = ({
               if (isOverview) {
                 return (
                   <React.Fragment key={m.id}>
-                    {/* Divider before Overview */}
-                    <div className="h-5 w-px bg-slate-800 mx-1 shrink-0" />
+                    {/* 3D Divider */}
+                    <div className="h-6 w-px bg-slate-800/90 shadow-[1px_0_0_rgba(255,255,255,0.05)] mx-1 shrink-0" />
                     <button
                       onClick={() => onSelectTab(m.id)}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 ${
+                      className={`relative flex items-center gap-1.5 px-4 py-1.5 text-xs sm:text-sm font-extrabold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 select-none ${
                         isActive
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-900/40 ring-1 ring-emerald-400/30 scale-[1.02]'
-                          : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10'
+                          ? 'bg-gradient-to-b from-emerald-400 via-emerald-600 to-teal-700 text-white border-t border-emerald-200/70 border-b border-teal-900/90 shadow-[0_6px_16px_rgba(16,185,129,0.45),inset_0_1px_1px_rgba(255,255,255,0.5)] -translate-y-0.5 scale-[1.04] ring-1 ring-emerald-300/40'
+                          : 'text-emerald-400/90 hover:text-emerald-300 hover:bg-emerald-500/10 hover:-translate-y-0.5 active:translate-y-0 border border-transparent'
                       }`}
                     >
-                      <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
-                      <span>{m.label}</span>
+                      <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-emerald-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]' : 'text-emerald-400'}`} />
+                      <span className={isActive ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]' : ''}>{m.label}</span>
+                      {isActive && (
+                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-emerald-200 shadow-[0_0_8px_#a7f3d0] animate-pulse" />
+                      )}
                     </button>
                   </React.Fragment>
                 );
@@ -164,14 +167,17 @@ export const Header: React.FC<HeaderProps> = ({
                   key={m.id}
                   onClick={() => onSelectTab(m.id)}
                   title={m.label}
-                  className={`flex items-center justify-center px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 ${
+                  className={`relative flex items-center justify-center px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-200 shrink-0 select-none ${
                     isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-900/40 ring-1 ring-blue-400/30 scale-[1.02]'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-gradient-to-b from-blue-400 via-blue-600 to-indigo-700 text-white border-t border-cyan-200/70 border-b border-indigo-950/90 shadow-[0_6px_16px_rgba(37,99,235,0.45),inset_0_1px_1px_rgba(255,255,255,0.5)] -translate-y-0.5 scale-[1.04] ring-1 ring-cyan-300/40'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/70 hover:-translate-y-0.5 active:translate-y-0 border border-transparent'
                   }`}
                 >
-                  <span className="sm:hidden">{shortLabel}</span>
-                  <span className="hidden sm:inline">{m.label}</span>
+                  <span className={`sm:hidden ${isActive ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]' : ''}`}>{shortLabel}</span>
+                  <span className={`hidden sm:inline ${isActive ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]' : ''}`}>{m.label}</span>
+                  {isActive && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9] animate-pulse" />
+                  )}
                 </button>
               );
             })}
