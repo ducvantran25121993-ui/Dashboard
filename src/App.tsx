@@ -201,7 +201,7 @@ export default function App() {
       />
 
       {/* Main Content Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Live Google Sheet Status Banner */}
         <SheetStatusBanner
           isLive={isLive}
@@ -301,7 +301,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-[1650px] mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>Báo Cáo Doanh Thu Theo Tháng, Chi Phí (VAT) & Data Dịch Vụ Theo Ngày</p>
           <p className="text-slate-600">
             © 2026 Team Google Ads. Tài Liệu Bảo Mật - Lưu Hành Nội Bộ

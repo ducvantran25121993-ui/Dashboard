@@ -36,7 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-50 shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Top bar: Title & Controls */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-800">
           <div className="flex items-center space-x-3">
