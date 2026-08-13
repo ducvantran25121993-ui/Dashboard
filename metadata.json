@@ -1,5 +1,5 @@
 {
-  "name": "Remix: Regional Monthly Finance Visualizer",
+  "name": "Bảng Điều Khiển Tâm Đức Smile",
   "description": "Creates monthly charts for regional revenue and VAT costs, organizing six months of data into separate spreadsheet tabs.",
   "requestFramePermissions": [],
   "majorCapabilities": [
