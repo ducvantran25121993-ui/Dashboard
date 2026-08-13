@@ -143,28 +143,19 @@ export const Header: React.FC<HeaderProps> = ({
                 return (
                   <React.Fragment key={m.id}>
                     {/* Divider */}
-                    <div className="h-5 w-px bg-slate-800/80 mx-1 shrink-0" />
+                    <div className="h-6 w-px bg-slate-800 mx-1 shrink-0" />
                     <button
                       onClick={() => onSelectTab(m.id)}
-                      className={`relative flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-300 shrink-0 select-none overflow-hidden ${
+                      className={`relative flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-300 shrink-0 select-none ${
                         isActive
-                          ? 'bg-gradient-to-r from-white via-slate-50 to-white text-slate-950 border border-white ring-2 ring-emerald-400/80 shadow-[0_0_25px_rgba(255,255,255,0.7),0_0_40px_rgba(16,185,129,0.35)] scale-[1.03] -translate-y-0.5'
-                          : 'text-emerald-400/80 hover:text-emerald-300 hover:bg-emerald-950/30 border border-transparent'
+                          ? 'bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 text-white border-t border-emerald-200/50 border-b border-teal-950 shadow-[0_4px_20px_rgba(16,185,129,0.45),inset_0_1px_1px_rgba(255,255,255,0.4)] scale-[1.03] -translate-y-0.5 ring-1 ring-emerald-300/30'
+                          : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40 border border-transparent'
                       }`}
                     >
+                      <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-emerald-100 drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]' : 'text-emerald-400'}`} />
+                      <span className={isActive ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] font-extrabold' : ''}>{m.label}</span>
                       {isActive && (
-                        <>
-                          <span className="absolute -inset-1.5 rounded-2xl bg-emerald-400/30 blur-md pointer-events-none -z-10" />
-                          {/* Light Sweep Shimmer Effect */}
-                          <span className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none z-10">
-                            <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/90 to-transparent animate-shimmer" />
-                          </span>
-                        </>
-                      )}
-                      <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 z-20 ${isActive ? 'text-emerald-700' : 'text-emerald-400'}`} />
-                      <span className={`z-20 ${isActive ? 'text-slate-950 font-extrabold' : ''}`}>{m.label}</span>
-                      {isActive && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 sm:w-12 h-[3.5px] rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] z-20" />
+                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 sm:w-12 h-[3.5px] rounded-full bg-emerald-300 shadow-[0_0_8px_#34d399]" />
                       )}
                     </button>
                   </React.Fragment>
