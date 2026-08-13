@@ -147,6 +147,7 @@ export default function App() {
 
   // Initial load
   useEffect(() => {
+    document.title = "Dashboard Báo Cáo Doanh Thu";
     loadSheetData(sheetUrl);
   }, [sheetUrl, loadSheetData]);
 
