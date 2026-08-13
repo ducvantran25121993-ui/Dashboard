@@ -131,7 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Month Navigation Tabs - Glassmorphism + Clean No-Scrollbar Container */}
+        {/* Month Navigation Tabs - White Glass & Shimmer Light Sweep */}
         <div className="pt-3 pb-2 flex items-center justify-between gap-2 overflow-x-auto overflow-y-hidden no-scrollbar">
           <div className="inline-flex items-center gap-1 sm:gap-2 p-1.5 bg-slate-900/80 backdrop-blur-xl rounded-2xl border border-slate-800/90 shadow-2xl max-w-full overflow-x-auto overflow-y-hidden no-scrollbar">
             {months.map((m) => {
@@ -146,19 +146,25 @@ export const Header: React.FC<HeaderProps> = ({
                     <div className="h-5 w-px bg-slate-800/80 mx-1 shrink-0" />
                     <button
                       onClick={() => onSelectTab(m.id)}
-                      className={`relative flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-300 shrink-0 select-none ${
+                      className={`relative flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-bold rounded-xl whitespace-nowrap transition-all duration-300 shrink-0 select-none overflow-hidden ${
                         isActive
-                          ? 'bg-emerald-950/90 text-white border border-emerald-300/90 ring-2 ring-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),inset_0_0_15px_rgba(52,211,153,0.4)] scale-[1.02]'
+                          ? 'bg-gradient-to-r from-white via-slate-50 to-white text-slate-950 border border-white ring-2 ring-emerald-400/80 shadow-[0_0_25px_rgba(255,255,255,0.7),0_0_40px_rgba(16,185,129,0.35)] scale-[1.03] -translate-y-0.5'
                           : 'text-emerald-400/80 hover:text-emerald-300 hover:bg-emerald-950/30 border border-transparent'
                       }`}
                     >
                       {isActive && (
-                        <span className="absolute inset-0 rounded-xl bg-emerald-400/20 blur-sm pointer-events-none -z-10" />
+                        <>
+                          <span className="absolute -inset-1.5 rounded-2xl bg-emerald-400/30 blur-md pointer-events-none -z-10" />
+                          {/* Light Sweep Shimmer Effect */}
+                          <span className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none z-10">
+                            <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/90 to-transparent animate-shimmer" />
+                          </span>
+                        </>
                       )}
-                      <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isActive ? 'text-emerald-200 drop-shadow-[0_0_8px_#34d399]' : 'text-emerald-400'}`} />
-                      <span className={isActive ? 'drop-shadow-[0_0_8px_rgba(52,211,153,0.9)] font-extrabold' : ''}>{m.label}</span>
+                      <TrendingUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 z-20 ${isActive ? 'text-emerald-700' : 'text-emerald-400'}`} />
+                      <span className={`z-20 ${isActive ? 'text-slate-950 font-extrabold' : ''}`}>{m.label}</span>
                       {isActive && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 sm:w-12 h-[3.5px] rounded-full bg-emerald-300 shadow-[0_0_10px_#10b981,0_0_20px_#34d399]" />
+                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 sm:w-12 h-[3.5px] rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981] z-20" />
                       )}
                     </button>
                   </React.Fragment>
@@ -170,22 +176,28 @@ export const Header: React.FC<HeaderProps> = ({
                   key={m.id}
                   onClick={() => onSelectTab(m.id)}
                   title={m.label}
-                  className={`group relative flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl whitespace-nowrap transition-all duration-300 shrink-0 select-none ${
+                  className={`group relative flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-semibold rounded-xl whitespace-nowrap transition-all duration-300 shrink-0 select-none overflow-hidden ${
                     isActive
-                      ? 'bg-teal-950/90 text-white border border-emerald-300/90 ring-2 ring-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),inset_0_0_15px_rgba(52,211,153,0.4)] scale-[1.02]'
+                      ? 'bg-gradient-to-r from-white via-slate-50 to-white text-slate-950 border border-white ring-2 ring-cyan-400/80 shadow-[0_0_25px_rgba(255,255,255,0.7),0_0_40px_rgba(56,189,248,0.35)] scale-[1.03] -translate-y-0.5'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
                   }`}
                 >
                   {isActive && (
-                    <span className="absolute inset-0 rounded-xl bg-emerald-400/20 blur-sm pointer-events-none -z-10" />
+                    <>
+                      <span className="absolute -inset-1.5 rounded-2xl bg-cyan-400/30 blur-md pointer-events-none -z-10" />
+                      {/* Light Sweep Shimmer Effect */}
+                      <span className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none z-10">
+                        <span className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-white/90 to-transparent animate-shimmer" />
+                      </span>
+                    </>
                   )}
-                  <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${
-                    isActive ? 'text-emerald-200 drop-shadow-[0_0_8px_#34d399]' : 'text-slate-500 group-hover:text-slate-300'
+                  <Calendar className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors z-20 ${
+                    isActive ? 'text-cyan-700' : 'text-slate-500 group-hover:text-slate-300'
                   }`} />
-                  <span className={`sm:hidden ${isActive ? 'drop-shadow-[0_0_8px_rgba(52,211,153,0.9)] font-bold' : ''}`}>{shortLabel}</span>
-                  <span className={`hidden sm:inline ${isActive ? 'drop-shadow-[0_0_8px_rgba(52,211,153,0.9)] font-bold' : ''}`}>{m.label}</span>
+                  <span className={`sm:hidden z-20 ${isActive ? 'text-slate-950 font-extrabold' : ''}`}>{shortLabel}</span>
+                  <span className={`hidden sm:inline z-20 ${isActive ? 'text-slate-950 font-extrabold' : ''}`}>{m.label}</span>
                   {isActive && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 sm:w-12 h-[3.5px] rounded-full bg-emerald-300 shadow-[0_0_10px_#10b981,0_0_20px_#34d399]" />
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 sm:w-12 h-[3.5px] rounded-full bg-cyan-500 shadow-[0_0_10px_#06b6d4] z-20" />
                   )}
                 </button>
               );
